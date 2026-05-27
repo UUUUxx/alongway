@@ -1,0 +1,68 @@
+# # Secrets and local environment
+# .env
+# .env.*
+# !.env.example
+# **/.env
+# **/.env.*
+# !**/.env.example
+
+# # Local databases and generated data
+# *.db
+# *.sqlite
+# *.sqlite3
+# #**/alongway_mvp.db
+
+# # Python
+# __pycache__/
+# **/__pycache__/
+# *.py[cod]
+# .pytest_cache/
+# **/.pytest_cache/
+# .mypy_cache/
+# .ruff_cache/
+# .coverage
+# htmlcov/
+# .venv/
+# venv/
+# env/
+
+# Node / frontend artifacts
+node_modules/
+dist/
+build/
+.vite/
+.next/
+coverage/
+
+# Logs and runtime files
+*.log
+logs/
+tmp/
+temp/
+*.pid
+
+# Archives and packaged submissions
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# OS / editor / local tool state
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.claude/
+*.swp
+*.swo
+
+# Local screenshots or demo recordings
+screenshots/
+recordings/
+*.mp4
+*.mov
+*.webm
+
+mvp_test_suite/
+/image

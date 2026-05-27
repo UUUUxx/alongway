@@ -1,0 +1,245 @@
+"""
+Pydantic request and response models for MVP API.
+"""
+from typing import Any, Optional
+
+from pydantic import BaseModel, Field
+
+
+# ==================== Request Models ====================
+
+
+class LocationInput(BaseModel):
+    """Location input model."""
+
+    name: str
+    address: str = ""
+    location: str = ""
+    longitude: Optional[float] = None
+    latitude: Optional[float] = None
+
+
+class PreferencesInput(BaseModel):
+    """User preferences."""
+
+    prefer_less_detour: bool = True
+    prefer_low_price: bool = True
+    prefer_high_rating: bool = False
+    prefer_high_sales: bool = False
+    prefer_fast_arrival: bool = False
+
+
+class ConstraintsInput(BaseModel):
+    """Constraints on the plan."""
+
+    max_detour_meters: int = 800
+    max_extra_time_minutes: int = 15
+    search_radius_meters: int = 1500
+    max_pois_per_task: int = 5
+    max_deals_per_poi: int = 3
+    max_route_candidates: int = 20
+
+
+class PlanRequest(BaseModel):
+    """POST /api/plan request."""
+
+    request_id: Optional[str] = None
+    user_query: str
+    start_location: LocationInput
+    end_location: LocationInput
+    city: str = "武汉"
+    travel_mode: str = "walking"
+    budget: Optional[float] = None
+    preferences: PreferencesInput = Field(default_factory=PreferencesInput)
+    constraints: ConstraintsInput = Field(default_factory=ConstraintsInput)
+
+
+class Point(BaseModel):
+    """A geographic point."""
+
+    name: str
+    longitude: float
+    latitude: float
+
+
+class RouteCalculateRequest(BaseModel):
+    """POST /internal/route/calculate request."""
+
+    points: list[Point]
+    travel_mode: str = "walking"
+
+
+class POISearchRequest(BaseModel):
+    """POST /internal/pois/search request."""
+
+    source_keywords: list[str]
+    center: Optional[Point] = None
+    radius_meters: Optional[int] = None
+    limit: int = 5
+
+
+class DealSearchRequest(BaseModel):
+    """POST /internal/deals/search request."""
+
+    poi_id: str
+    categories: Optional[list[str]] = None
+    max_price: Optional[float] = None
+    limit: int = 3
+
+
+# ==================== Response Models ====================
+
+
+class POIResponse(BaseModel):
+    """POI response item."""
+
+    poi_id: str
+    name: str
+    type: str
+    address: str
+    location: str
+    longitude: float
+    latitude: float
+    rating: Optional[float] = None
+    cost: Optional[float] = None
+    source_keyword: str
+    source_provider: Optional[str] = None
+    source_id: Optional[str] = None
+    source_key: Optional[str] = None
+    category_major: Optional[str] = None
+    category_minor: Optional[str] = None
+    source_type: Optional[str] = None
+    source_typecode: Optional[str] = None
+    distance_meters: Optional[float] = None
+
+
+class POISarchResponse(BaseModel):
+    """POST /internal/pois/search response."""
+
+    pois: list[POIResponse]
+
+
+class DealResponse(BaseModel):
+    """Deal response item."""
+
+    poi_id: str
+    name: str
+    category: str
+    deal_id: str
+    deal_title: str
+    price: float
+    original_price: Optional[float] = None
+    included_items: Optional[list[str]] = None
+    additional_information: Optional[str] = None
+    valid_time: Optional[str] = None
+    rating: Optional[float] = None
+    monthly_sales: Optional[int] = None
+    reviews: Optional[list[str]] = None
+    business_time: Optional[str] = None
+
+
+class DealsSearchResponse(BaseModel):
+    """POST /internal/deals/search response."""
+
+    deals: list[DealResponse]
+
+
+class RouteSegment(BaseModel):
+    """A segment of a route."""
+
+    from_name: str
+    to_name: str
+    distance_meters: int
+    duration_minutes: float
+
+
+class RouteCalculateResponse(BaseModel):
+    """POST /internal/route/calculate response."""
+
+    distance_meters: int
+    duration_minutes: float
+    polyline: list[list[float]]
+    segments: list[RouteSegment]
+
+
+class PlanResponse(BaseModel):
+    """Response from /api/plan - from Agent service."""
+
+    success: bool
+    request_id: Optional[str] = None
+    plan: Optional[dict[str, Any]] = None
+    error_code: Optional[str] = None
+    message: Optional[str] = None
+
+
+class HealthResponse(BaseModel):
+    """GET /health response."""
+
+    status: str
+
+
+# ==================== Admin Models ====================
+
+
+class POICreate(BaseModel):
+    """Create/update POI."""
+
+    name: str
+    type: str
+    address: str
+    location: str
+    longitude: float
+    latitude: float
+    rating: Optional[float] = None
+    cost: Optional[float] = None
+    source_keyword: str
+
+
+class POIUpdate(BaseModel):
+    """Update POI (all fields optional)."""
+
+    name: Optional[str] = None
+    type: Optional[str] = None
+    address: Optional[str] = None
+    location: Optional[str] = None
+    longitude: Optional[float] = None
+    latitude: Optional[float] = None
+    rating: Optional[float] = None
+    cost: Optional[float] = None
+    source_keyword: Optional[str] = None
+
+
+class DealCreate(BaseModel):
+    """Create/update Deal."""
+
+    poi_id: str
+    name: str
+    category: str
+    deal_title: str
+    price: float
+    original_price: Optional[float] = None
+    included_items: Optional[list[str]] = None
+    additional_information: Optional[str] = None
+    valid_time: Optional[str] = None
+    rating: Optional[float] = None
+    monthly_sales: Optional[int] = None
+    reviews: Optional[list[str]] = None
+    business_time: Optional[str] = None
+
+
+class DealUpdate(BaseModel):
+    """Update Deal (all fields optional)."""
+
+    poi_id: Optional[str] = None
+    name: Optional[str] = None
+    category: Optional[str] = None
+    deal_title: Optional[str] = None
+    price: Optional[float] = None
+    original_price: Optional[float] = None
+    included_items: Optional[list[str]] = None
+    additional_information: Optional[str] = None
+    valid_time: Optional[str] = None
+    rating: Optional[float] = None
+    monthly_sales: Optional[int] = None
+    reviews: Optional[list[str]] = None
+    business_time: Optional[str] = None

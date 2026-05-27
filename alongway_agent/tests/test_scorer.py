@@ -1,0 +1,112 @@
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from agent.models import (
+    CandidatePlan,
+    Deal,
+    Location,
+    POI,
+    PlanConstraints,
+    PlanStop,
+    RouteResult,
+    StopType,
+    UserPreferences,
+)
+from agent.scorer import PlanScorer
+
+
+def _plan(plan_id: str, detour: int, extra_time: float, cost: float) -> CandidatePlan:
+    poi = POI(
+        poi_id=f"poi_{plan_id}",
+        name=f"候选{plan_id}",
+        type="drink",
+        longitude=114.12,
+        latitude=30.45,
+        rating=4.6,
+        source_keyword="奶茶",
+    )
+    deal = Deal(
+        poi_id=poi.poi_id,
+        name=poi.name,
+        category="奶茶",
+        deal_id=f"deal_{plan_id}",
+        deal_title="饮品套餐",
+        price=cost,
+        rating=4.6,
+        monthly_sales=300,
+    )
+    return CandidatePlan(
+        plan_id=plan_id,
+        stops=[
+            PlanStop(
+                order=1,
+                stop_type=StopType.START,
+                name="起点",
+                location=Location(name="起点", longitude=114.1, latitude=30.4),
+            ),
+            PlanStop(
+                order=2,
+                stop_type=StopType.DEAL,
+                task_id="task_1",
+                name=poi.name,
+                location=poi.to_location(),
+                poi=poi,
+                deal=deal,
+                is_open=True,
+            ),
+            PlanStop(
+                order=3,
+                stop_type=StopType.END,
+                name="终点",
+                location=Location(name="终点", longitude=114.2, latitude=30.5),
+            ),
+        ],
+        route=RouteResult(
+            distance_meters=1000 + detour,
+            duration_minutes=12 + extra_time,
+            polyline=[],
+        ),
+        base_distance_meters=1000,
+        base_duration_minutes=12,
+        detour_distance_meters=detour,
+        extra_time_minutes=extra_time,
+        estimated_cost=cost,
+    )
+
+
+def test_scorer_prefers_less_detour_when_requested() -> None:
+    plans = [
+        _plan("A", detour=50, extra_time=1, cost=19),
+        _plan("B", detour=450, extra_time=5, cost=2),
+        _plan("C", detour=250, extra_time=3, cost=10),
+    ]
+    ranked = PlanScorer().rank_plans(
+        plans,
+        UserPreferences(prefer_less_detour=True, prefer_low_price=False),
+        PlanConstraints(),
+        budget=20,
+    )
+
+    assert ranked[0].plan_id == "A"
+
+
+def test_scorer_prefers_low_price_when_requested() -> None:
+    plans = [
+        _plan("A", detour=50, extra_time=1, cost=19),
+        _plan("B", detour=450, extra_time=5, cost=2),
+        _plan("C", detour=250, extra_time=3, cost=10),
+    ]
+    ranked = PlanScorer().rank_plans(
+        plans,
+        UserPreferences(prefer_less_detour=False, prefer_low_price=True),
+        PlanConstraints(),
+        budget=20,
+    )
+
+    assert ranked[0].plan_id == "B"
