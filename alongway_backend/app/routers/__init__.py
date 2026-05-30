@@ -1,6 +1,7 @@
 from app.routers import (
     admin,
     deal_admin,
+    geocode,
     health,
     internal_deals,
     internal_pois,
@@ -12,6 +13,7 @@ from app.routers import (
 __all__ = [
     "admin",
     "deal_admin",
+    "geocode",
     "health",
     "internal_deals",
     "internal_pois",

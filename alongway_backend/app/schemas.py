@@ -13,10 +13,12 @@ class LocationInput(BaseModel):
     """Location input model."""
 
     name: str
-    address: str = ""
-    location: str = ""
-    longitude: Optional[float] = None
-    latitude: Optional[float] = None
+    address: str
+    location: str
+    longitude: float = Field(ge=-180, le=180)
+    latitude: float = Field(ge=-90, le=90)
+    accuracy_meters: Optional[float] = Field(default=None, ge=0)
+    source: Optional[str] = None
 
 
 class PreferencesInput(BaseModel):
@@ -47,7 +49,7 @@ class PlanRequest(BaseModel):
     user_query: str
     start_location: LocationInput
     end_location: LocationInput
-    city: str = "武汉"
+    city: str
     travel_mode: str = "walking"
     budget: Optional[float] = None
     preferences: PreferencesInput = Field(default_factory=PreferencesInput)
@@ -67,6 +69,7 @@ class RouteCalculateRequest(BaseModel):
 
     points: list[Point]
     travel_mode: str = "walking"
+    use_real_route: bool = False  # if True, use Amap API instead of Haversine
 
 
 class POISearchRequest(BaseModel):
@@ -103,13 +106,6 @@ class POIResponse(BaseModel):
     rating: Optional[float] = None
     cost: Optional[float] = None
     source_keyword: str
-    source_provider: Optional[str] = None
-    source_id: Optional[str] = None
-    source_key: Optional[str] = None
-    category_major: Optional[str] = None
-    category_minor: Optional[str] = None
-    source_type: Optional[str] = None
-    source_typecode: Optional[str] = None
     distance_meters: Optional[float] = None
 
 
@@ -243,3 +239,54 @@ class DealUpdate(BaseModel):
     monthly_sales: Optional[int] = None
     reviews: Optional[list[str]] = None
     business_time: Optional[str] = None
+
+
+# ==================== Geocode Models ====================
+
+
+class GeocodeRequest(BaseModel):
+    """POST /api/geocode request — address to coordinates."""
+
+    address: str
+    city: str = "武汉"
+
+
+class GeocodeResult(BaseModel):
+    """Single geocode result."""
+
+    name: str
+    address: str
+    location: str  # "longitude,latitude"
+    longitude: float
+    latitude: float
+
+
+class GeocodeResponse(BaseModel):
+    """POST /api/geocode response."""
+
+    success: bool
+    results: list[GeocodeResult] = []
+    error_message: Optional[str] = None
+
+
+# ==================== History Cache Models (Task 4) ====================
+
+
+class PlanHistoryEntry(BaseModel):
+    """A cached history entry of a previous plan request + its response."""
+
+    request_id: str
+    user_query: str
+    city: str
+    travel_mode: str
+    preferences: PreferencesInput
+    constraints: ConstraintsInput
+    response_plan: Optional[dict[str, Any]] = None
+    created_at: str  # ISO format timestamp
+
+
+class PlanHistoryResponse(BaseModel):
+    """Response with cached history entries."""
+
+    entries: list[PlanHistoryEntry]
+    count: int
