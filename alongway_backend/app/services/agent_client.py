@@ -25,7 +25,7 @@ async def call_agent_plan(request: PlanRequest) -> PlanResponse:
     settings = get_settings()
 
     try:
-        async with httpx.AsyncClient(timeout=settings.agent_service_timeout) as client:
+        async with httpx.AsyncClient(timeout=settings.agent_service_timeout, trust_env=False) as client:
             response = await client.post(
                 f"{settings.agent_service_url}/agent/plan",
                 json=request.model_dump(exclude_none=True),
@@ -66,6 +66,18 @@ def adapt_agent_response(data: dict[str, Any], request: PlanRequest) -> PlanResp
             request_id=data.get("request_id") or request.request_id,
             error_code=data.get("error_code"),
             message=data.get("message") or "Agent failed to generate a plan",
+            missing_fields=data.get("missing_fields") or [],
+            fallback_suggestions=data.get("fallback_suggestions") or [],
+            needs_clarification=bool(data.get("needs_clarification")),
+            clarification_type=data.get("clarification_type"),
+            candidates=data.get("candidates") or [],
+        )
+
+    if "plan" in data and data.get("plan") is not None:
+        return PlanResponse(
+            success=True,
+            request_id=data.get("request_id") or request.request_id,
+            plan=data.get("plan"),
         )
 
     selected_plan = data.get("selected_plan")
@@ -92,10 +104,13 @@ def _build_frontend_plan(
     stops = selected_plan.get("stops") or []
     route = selected_plan.get("route") or {}
     route_segments = route.get("segments") or []
-    origin = _summary_location(stops[0] if stops else None, request.start_location.model_dump())
+    origin = _summary_location(
+        stops[0] if stops else None,
+        _location_fallback(request.start_location or request.current_location),
+    )
     destination = _summary_location(
         stops[-1] if stops else None,
-        request.end_location.model_dump(),
+        _location_fallback(request.end_location),
     )
     poi_stops = [
         stop
@@ -149,6 +164,10 @@ def _summary_location(
         "name": (stop or {}).get("name") or location.get("name") or fallback.get("name"),
         "address": location.get("address") or fallback.get("address") or "",
     }
+
+
+def _location_fallback(location: Any) -> dict[str, Any]:
+    return location.model_dump() if location is not None else {}
 
 
 def _to_waypoint(stop: dict[str, Any], index: int) -> dict[str, Any]:

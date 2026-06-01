@@ -9,6 +9,7 @@ try:
 except ImportError:  # pragma: no cover - exercised only without optional dependency
     httpx = None  # type: ignore[assignment]
 
+from agent.call_logger import log_call
 from agent.models import Deal, Location, POI, RouteResult, RouteSegment
 
 
@@ -20,6 +21,7 @@ class BackendClient(ABC):
         center: Optional[Location],
         radius_meters: int,
         limit: int,
+        specific_place_name: Optional[str] = None,
     ) -> List[POI]:
         raise NotImplementedError
 
@@ -41,6 +43,15 @@ class BackendClient(ABC):
     ) -> RouteResult:
         raise NotImplementedError
 
+    @abstractmethod
+    async def geocode(
+        self,
+        address: str,
+        city: Optional[str],
+        limit: int = 3,
+    ) -> List[Location]:
+        raise NotImplementedError
+
 
 class HttpBackendClient(BackendClient):
     def __init__(self, base_url: str, timeout_seconds: float = 10.0) -> None:
@@ -50,10 +61,24 @@ class HttpBackendClient(BackendClient):
         self.timeout_seconds = timeout_seconds
 
     async def _post(self, path: str, payload: dict) -> dict:
-        async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
-            response = await client.post(f"{self.base_url}{path}", json=payload)
-            response.raise_for_status()
-            return response.json()
+        async with httpx.AsyncClient(timeout=self.timeout_seconds, trust_env=False) as client:
+            try:
+                response = await client.post(f"{self.base_url}{path}", json=payload)
+                response.raise_for_status()
+                data = response.json()
+                log_call(
+                    "agent.backend_client.post.result",
+                    request={"path": path, "payload": payload},
+                    result=data,
+                )
+                return data
+            except Exception as exc:
+                log_call(
+                    "agent.backend_client.post.error",
+                    request={"path": path, "payload": payload},
+                    error=str(exc),
+                )
+                raise
 
     async def search_pois(
         self,
@@ -61,12 +86,14 @@ class HttpBackendClient(BackendClient):
         center: Optional[Location],
         radius_meters: int,
         limit: int,
+        specific_place_name: Optional[str] = None,
     ) -> List[POI]:
         payload = {
             "source_keywords": source_keywords,
             "center": center.model_dump(exclude_none=True) if center else None,
             "radius_meters": radius_meters,
             "limit": limit,
+            "specific_place_name": specific_place_name,
         }
         data = await self._post("/internal/pois/search", payload)
         return [POI.model_validate(item) for item in data.get("pois", [])]
@@ -95,9 +122,35 @@ class HttpBackendClient(BackendClient):
         payload = {
             "points": [point.model_dump(exclude_none=True) for point in points],
             "travel_mode": travel_mode,
+            "use_real_route": True,
         }
         data = await self._post("/internal/route/calculate", payload)
         return RouteResult.model_validate(data)
+
+    async def geocode(
+        self,
+        address: str,
+        city: Optional[str],
+        limit: int = 3,
+    ) -> List[Location]:
+        data = await self._post(
+            "/api/geocode",
+            {"address": address, "city": city or "武汉"},
+        )
+        if not data.get("success"):
+            return []
+        locations = []
+        for item in data.get("results", [])[:limit]:
+            locations.append(
+                Location(
+                    name=item.get("name") or address,
+                    address=item.get("address"),
+                    location=item.get("location"),
+                    longitude=item.get("longitude"),
+                    latitude=item.get("latitude"),
+                )
+            )
+        return locations
 
 
 class MockBackendClient(BackendClient):
@@ -270,8 +323,11 @@ class MockBackendClient(BackendClient):
         center: Optional[Location],
         radius_meters: int,
         limit: int,
+        specific_place_name: Optional[str] = None,
     ) -> List[POI]:
         normalized = [keyword.lower() for keyword in source_keywords]
+        if specific_place_name:
+            normalized.insert(0, specific_place_name.lower())
         matched: list[tuple[float, POI]] = []
         for poi in self._pois:
             text = f"{poi.source_keyword} {poi.name} {poi.type}".lower()
@@ -291,6 +347,30 @@ class MockBackendClient(BackendClient):
 
         matched.sort(key=lambda item: (item[0], -(item[1].rating or 0)))
         return [poi for _, poi in matched[:limit]]
+
+    async def geocode(
+        self,
+        address: str,
+        city: Optional[str],
+        limit: int = 3,
+    ) -> List[Location]:
+        matched = await self.search_pois(
+            source_keywords=[address],
+            center=None,
+            radius_meters=10_000,
+            limit=limit,
+            specific_place_name=address,
+        )
+        locations = [poi.to_location() for poi in matched]
+        fallback = {
+            "宿舍": Location(name="学生宿舍", longitude=114.123, latitude=30.456),
+            "图书馆": Location(name="图书馆", longitude=114.128, latitude=30.462),
+            "主图书馆": Location(name="主图书馆", longitude=114.128, latitude=30.462),
+            "教学楼": Location(name="教学楼", longitude=114.127, latitude=30.46),
+        }
+        if not locations and address in fallback:
+            locations.append(fallback[address])
+        return locations[:limit]
 
     async def search_deals(
         self,

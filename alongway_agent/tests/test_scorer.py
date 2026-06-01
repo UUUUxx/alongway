@@ -21,14 +21,21 @@ from agent.models import (
 from agent.scorer import PlanScorer
 
 
-def _plan(plan_id: str, detour: int, extra_time: float, cost: float) -> CandidatePlan:
+def _plan(
+    plan_id: str,
+    detour: int,
+    extra_time: float,
+    cost: float,
+    rating: float = 4.6,
+    monthly_sales: int = 300,
+) -> CandidatePlan:
     poi = POI(
         poi_id=f"poi_{plan_id}",
         name=f"候选{plan_id}",
         type="drink",
         longitude=114.12,
         latitude=30.45,
-        rating=4.6,
+        rating=rating,
         source_keyword="奶茶",
     )
     deal = Deal(
@@ -38,8 +45,8 @@ def _plan(plan_id: str, detour: int, extra_time: float, cost: float) -> Candidat
         deal_id=f"deal_{plan_id}",
         deal_title="饮品套餐",
         price=cost,
-        rating=4.6,
-        monthly_sales=300,
+        rating=rating,
+        monthly_sales=monthly_sales,
     )
     return CandidatePlan(
         plan_id=plan_id,
@@ -110,3 +117,48 @@ def test_scorer_prefers_low_price_when_requested() -> None:
     )
 
     assert ranked[0].plan_id == "B"
+
+
+def test_scorer_prefers_high_rating_when_requested() -> None:
+    plans = [
+        _plan("A", detour=100, extra_time=1, cost=10, rating=3.2),
+        _plan("B", detour=100, extra_time=1, cost=10, rating=4.9),
+    ]
+    ranked = PlanScorer().rank_plans(
+        plans,
+        UserPreferences(prefer_less_detour=False, prefer_high_rating=True),
+        PlanConstraints(),
+        budget=30,
+    )
+
+    assert ranked[0].plan_id == "B"
+
+
+def test_scorer_prefers_high_sales_when_requested() -> None:
+    plans = [
+        _plan("A", detour=100, extra_time=1, cost=10, monthly_sales=30),
+        _plan("B", detour=100, extra_time=1, cost=10, monthly_sales=900),
+    ]
+    ranked = PlanScorer().rank_plans(
+        plans,
+        UserPreferences(prefer_less_detour=False, prefer_high_sales=True),
+        PlanConstraints(),
+        budget=30,
+    )
+
+    assert ranked[0].plan_id == "B"
+
+
+def test_scorer_prefers_fast_arrival_when_requested() -> None:
+    plans = [
+        _plan("A", detour=120, extra_time=1, cost=15),
+        _plan("B", detour=80, extra_time=10, cost=3),
+    ]
+    ranked = PlanScorer().rank_plans(
+        plans,
+        UserPreferences(prefer_less_detour=False, prefer_low_price=False, prefer_fast_arrival=True),
+        PlanConstraints(max_extra_time_minutes=15),
+        budget=20,
+    )
+
+    assert ranked[0].plan_id == "A"

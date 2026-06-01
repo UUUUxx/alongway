@@ -48,7 +48,7 @@ class PlanConstraints(BaseModel):
     search_radius_meters: int = 1500
     max_pois_per_task: int = 5
     max_deals_per_poi: int = 3
-    max_route_candidates: int = 20
+    max_route_candidates: int = 10
 
 
 class PlanRequest(BaseModel):
@@ -118,6 +118,8 @@ class TaskSpec(BaseModel):
     type: TaskType
     raw_text: str
     source_keywords: List[str]
+    category: Optional[str] = None
+    specific_place_name: Optional[str] = None
     budget: Optional[float] = None
     required: bool = True
 
@@ -230,3 +232,6 @@ class PlanResponse(BaseModel):
     message: Optional[str] = None
     missing_fields: List[str] = Field(default_factory=list)
     fallback_suggestions: List[str] = Field(default_factory=list)
+    needs_clarification: bool = False
+    clarification_type: Optional[str] = None
+    candidates: List[dict] = Field(default_factory=list)

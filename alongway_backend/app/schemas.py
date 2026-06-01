@@ -13,10 +13,12 @@ class LocationInput(BaseModel):
     """Location input model."""
 
     name: str
-    address: str = ""
-    location: str = ""
-    longitude: Optional[float] = None
-    latitude: Optional[float] = None
+    address: str
+    location: str
+    longitude: float = Field(ge=-180, le=180)
+    latitude: float = Field(ge=-90, le=90)
+    accuracy_meters: Optional[float] = Field(default=None, ge=0)
+    source: Optional[str] = None
 
 
 class PreferencesInput(BaseModel):
@@ -37,7 +39,7 @@ class ConstraintsInput(BaseModel):
     search_radius_meters: int = 1500
     max_pois_per_task: int = 5
     max_deals_per_poi: int = 3
-    max_route_candidates: int = 20
+    max_route_candidates: int = 10
 
 
 class PlanRequest(BaseModel):
@@ -45,9 +47,10 @@ class PlanRequest(BaseModel):
 
     request_id: Optional[str] = None
     user_query: str
-    start_location: LocationInput
-    end_location: LocationInput
-    city: str = "武汉"
+    start_location: Optional[LocationInput] = None
+    end_location: Optional[LocationInput] = None
+    current_location: Optional[LocationInput] = None
+    city: str
     travel_mode: str = "walking"
     budget: Optional[float] = None
     preferences: PreferencesInput = Field(default_factory=PreferencesInput)
@@ -67,6 +70,7 @@ class RouteCalculateRequest(BaseModel):
 
     points: list[Point]
     travel_mode: str = "walking"
+    use_real_route: bool = True  # if True, use Amap API instead of Haversine
 
 
 class POISearchRequest(BaseModel):
@@ -76,6 +80,7 @@ class POISearchRequest(BaseModel):
     center: Optional[Point] = None
     radius_meters: Optional[int] = None
     limit: int = 5
+    specific_place_name: Optional[str] = None
 
 
 class DealSearchRequest(BaseModel):
@@ -103,13 +108,6 @@ class POIResponse(BaseModel):
     rating: Optional[float] = None
     cost: Optional[float] = None
     source_keyword: str
-    source_provider: Optional[str] = None
-    source_id: Optional[str] = None
-    source_key: Optional[str] = None
-    category_major: Optional[str] = None
-    category_minor: Optional[str] = None
-    source_type: Optional[str] = None
-    source_typecode: Optional[str] = None
     distance_meters: Optional[float] = None
 
 
@@ -170,6 +168,11 @@ class PlanResponse(BaseModel):
     plan: Optional[dict[str, Any]] = None
     error_code: Optional[str] = None
     message: Optional[str] = None
+    missing_fields: list[str] = Field(default_factory=list)
+    fallback_suggestions: list[str] = Field(default_factory=list)
+    needs_clarification: bool = False
+    clarification_type: Optional[str] = None
+    candidates: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class HealthResponse(BaseModel):
@@ -243,3 +246,54 @@ class DealUpdate(BaseModel):
     monthly_sales: Optional[int] = None
     reviews: Optional[list[str]] = None
     business_time: Optional[str] = None
+
+
+# ==================== Geocode Models ====================
+
+
+class GeocodeRequest(BaseModel):
+    """POST /api/geocode request — address to coordinates."""
+
+    address: str
+    city: str = "武汉"
+
+
+class GeocodeResult(BaseModel):
+    """Single geocode result."""
+
+    name: str
+    address: str
+    location: str  # "longitude,latitude"
+    longitude: float
+    latitude: float
+
+
+class GeocodeResponse(BaseModel):
+    """POST /api/geocode response."""
+
+    success: bool
+    results: list[GeocodeResult] = []
+    error_message: Optional[str] = None
+
+
+# ==================== History Cache Models (Task 4) ====================
+
+
+class PlanHistoryEntry(BaseModel):
+    """A cached history entry of a previous plan request + its response."""
+
+    request_id: str
+    user_query: str
+    city: str
+    travel_mode: str
+    preferences: PreferencesInput
+    constraints: ConstraintsInput
+    response_plan: Optional[dict[str, Any]] = None
+    created_at: str  # ISO format timestamp
+
+
+class PlanHistoryResponse(BaseModel):
+    """Response with cached history entries."""
+
+    entries: list[PlanHistoryEntry]
+    count: int

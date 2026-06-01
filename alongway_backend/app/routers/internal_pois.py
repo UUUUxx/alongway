@@ -34,4 +34,5 @@ def search_pois_endpoint(
         center=request.center,
         radius_meters=request.radius_meters,
         limit=request.limit,
+        specific_place_name=request.specific_place_name,
     )

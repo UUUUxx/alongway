@@ -7,6 +7,8 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+
 from app.models import Base
 
 

@@ -94,13 +94,24 @@ class PlanScorer:
 
     @staticmethod
     def _price_score(plan: CandidatePlan, budget: Optional[float]) -> float:
+        estimated_cost = plan.estimated_cost
+        if estimated_cost == 0:
+            poi_costs = [
+                stop.poi.cost
+                for stop in plan.stops
+                if stop.poi and stop.poi.cost is not None
+            ]
+            if poi_costs:
+                estimated_cost = sum(poi_costs)
+            elif any(stop.poi is not None for stop in plan.stops):
+                return 0.55
         if budget is None:
             return 0.7
         if budget <= 0:
             return 0.0
-        if plan.estimated_cost > budget:
+        if estimated_cost > budget:
             return 0.0
-        return max(0.0, 1 - 0.5 * plan.estimated_cost / budget)
+        return max(0.0, 1 - 0.5 * estimated_cost / budget)
 
     @staticmethod
     def _rating_score(plan: CandidatePlan) -> float:

@@ -1,5 +1,5 @@
 from agent.backend_client import BackendClient, HttpBackendClient, MockBackendClient
-from agent.llm_client import LLMClient, MockLLMClient
+from agent.llm_client import LLMClient, MockLLMClient, StepFunLLMClient
 from agent.models import (
     AlternativePlanSummary,
     CandidatePlan,
@@ -44,6 +44,7 @@ __all__ = [
     "RouteResult",
     "RouteSegment",
     "ScoreDetail",
+    "StepFunLLMClient",
     "StopType",
     "TaskSpec",
     "TaskType",

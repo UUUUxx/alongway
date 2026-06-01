@@ -10,9 +10,17 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from agent.backend_client import MockBackendClient
-from agent.llm_client import MockLLMClient
+from agent.llm_client import LLMClient, MockLLMClient
 from agent.models import Location, PlanRequest, StopType, UserPreferences
 from agent.planner_agent import PlanAgent
+
+
+class FailingLLMClient(LLMClient):
+    async def parse_intent(self, user_query, budget, preferences):
+        raise TimeoutError("llm timeout")
+
+    async def generate_explanation(self, user_query, selected_plan, alternative_plans):
+        return None
 
 
 def test_planner_agent_returns_valid_plan_with_mock_backend() -> None:
@@ -55,3 +63,31 @@ def test_planner_agent_returns_valid_plan_with_mock_backend() -> None:
     assert response.selected_plan.estimated_cost <= 20
     assert response.selected_plan.detour_distance_meters <= request.constraints.max_detour_meters
     assert response.summary
+
+
+def test_planner_agent_falls_back_and_uses_current_location() -> None:
+    request = PlanRequest(
+        request_id="req_current_location",
+        user_query="到图书馆，路上取快递",
+        current_location=Location(
+            name="学生宿舍",
+            longitude=114.123,
+            latitude=30.456,
+        ),
+        city="武汉",
+        travel_mode="walking",
+        preferences=UserPreferences(prefer_less_detour=True),
+    )
+    agent = PlanAgent(
+        backend_client=MockBackendClient(),
+        llm_client=FailingLLMClient(),
+        llm_timeout_seconds=0.1,
+    )
+
+    response = asyncio.run(agent.plan(request))
+
+    assert response.success is True
+    assert "LLM_FALLBACK_USED" in response.warnings
+    assert response.selected_plan is not None
+    assert response.selected_plan.stops[0].name == "学生宿舍"
+    assert response.selected_plan.stops[-1].name == "图书馆"
