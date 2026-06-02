@@ -137,6 +137,8 @@ class PlanAgent:
                     for task_id, fcs in filtered.items()
                 }
 
+            # ── v2: Haversine-only route evaluation (skip Amap for all candidates) ──
+            use_real_eval = not self.v2_enabled
             route_started = time.perf_counter()
             route_result = await self.route_evaluator.evaluate(
                 request=request,
@@ -146,22 +148,18 @@ class PlanAgent:
                 candidates_by_task=candidates_by_task,
                 base_route=base_route,
                 timeout_seconds=self.route_timeout_seconds,
+                use_real_route=use_real_eval,
             )
             timings["route_ms"] = int((time.perf_counter() - route_started) * 1000)
             metrics.amap_route_total_ms = timings["route_ms"]
             metrics.candidate_routes_evaluated = route_result.route_candidate_count
 
-            # Estimate Amap route call count:
-            # Each candidate route is a multi-point route: start→...→end
-            # For N candidates, there are ~(poi_count_in_route) * N segments
-            # The base route is 1 segment (start→end)
-            # Approximate: base (1) + routes_evaluated * avg_points_per_route
-            avg_points = sum(
-                len(intent.tasks) for _ in range(route_result.route_candidate_count)
-            ) if route_result.route_candidate_count > 0 else 0
-            # Each evaluated route with k POIs = k+1 segments
-            # With Haversine topk, routes have fewer POIs
-            est_segments = 1 + route_result.route_candidate_count * (len(intent.tasks) + 1)
+            # Estimate Amap route call count for evaluation phase:
+            # v2: 0 (all Haversine), v1: ~candidates * segments
+            if use_real_eval:
+                est_segments = 1 + route_result.route_candidate_count * (len(intent.tasks) + 1)
+            else:
+                est_segments = 0  # Haversine only for eval phase
             metrics.amap_route_calls_count = est_segments
 
             relaxed_route_constraints = False
@@ -210,6 +208,40 @@ class PlanAgent:
                 intent.budget if intent.budget is not None else request.budget,
             )
             selected_plan = ranked_plans[0]
+
+            # ── v2: Verify selected plan with real Amap route ──
+            if self.v2_enabled and not use_real_eval:
+                verify_started = time.perf_counter()
+                verify_points = (
+                    [start]
+                    + [
+                        stop.location
+                        for stop in selected_plan.stops
+                        if stop.stop_type.value in ("task", "deal")
+                    ]
+                    + [end]
+                )
+                try:
+                    real_route = await asyncio.wait_for(
+                        self.backend_client.calculate_route(
+                            verify_points, request.travel_mode
+                        ),
+                        timeout=self.route_timeout_seconds,
+                    )
+                    selected_plan.route = real_route
+                    # Recalculate detour and extra time
+                    selected_plan.detour_distance_meters = max(
+                        0, real_route.distance_meters - base_route.distance_meters
+                    )
+                    selected_plan.extra_time_minutes = round(
+                        max(0.0, real_route.duration_minutes - base_route.duration_minutes), 1
+                    )
+                    metrics.amap_route_calls_count += len(verify_points) - 1
+                    metrics.amap_route_total_ms += int(
+                        (time.perf_counter() - verify_started) * 1000
+                    )
+                except Exception:
+                    pass  # Keep Haversine route if Amap fails
             alternative_plans = [
                 self._to_alternative_summary(plan) for plan in ranked_plans[1:4]
             ]

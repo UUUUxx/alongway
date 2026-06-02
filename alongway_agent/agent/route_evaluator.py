@@ -42,6 +42,7 @@ class RouteEvaluator:
         candidates_by_task: dict[str, list[EnrichedCandidate]],
         base_route: RouteResult,
         timeout_seconds: float = 3.0,
+        use_real_route: bool = True,
     ) -> RouteEvaluationResult:
         groups = [
             sorted(candidates_by_task.get(task.task_id, []), key=self._rough_candidate_key)
@@ -66,14 +67,17 @@ class RouteEvaluator:
             if remaining <= 0:
                 break
             points = [start] + [candidate.poi.to_location() for candidate in combination] + [end]
-            try:
-                route = await asyncio.wait_for(
-                    self.backend_client.calculate_route(points, request.travel_mode),
-                    timeout=remaining,
-                )
-            except Exception:
+            if use_real_route:
+                try:
+                    route = await asyncio.wait_for(
+                        self.backend_client.calculate_route(points, request.travel_mode),
+                        timeout=remaining,
+                    )
+                except Exception:
+                    route = self._fallback_route(points, request.travel_mode)
+                    used_fallback_route = True
+            else:
                 route = self._fallback_route(points, request.travel_mode)
-                used_fallback_route = True
             detour_distance = max(0, route.distance_meters - base_route.distance_meters)
             extra_time = max(0.0, route.duration_minutes - base_route.duration_minutes)
             estimated_cost = round(
