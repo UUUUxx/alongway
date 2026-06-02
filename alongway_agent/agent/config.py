@@ -32,6 +32,20 @@ class Settings:
     poi_timeout_seconds: float = 20.0
     route_timeout_seconds: float = 120.0
 
+    # ── v2 optimization toggles ──
+    route_optimization_v2: bool = True
+    haversine_topk: int = 3
+    llm_rule_first: bool = True
+    llm_cache_enabled: bool = True
+    llm_cache_ttl_seconds: int = 300
+    connection_pool_enabled: bool = True
+
+
+def _env_bool(key: str, default: bool) -> bool:
+    """Parse a boolean environment variable."""
+    raw = os.getenv(key, str(default)).strip().lower()
+    return raw not in {"0", "false", "no", "off"}
+
 
 def load_settings() -> Settings:
     _load_local_env()
@@ -52,4 +66,11 @@ def load_settings() -> Settings:
         stepfun_timeout_seconds=float(os.getenv("STEPFUN_TIMEOUT_SECONDS", "20")),
         poi_timeout_seconds=float(os.getenv("ALONGWAY_POI_TIMEOUT_SECONDS", "20")),
         route_timeout_seconds=float(os.getenv("ALONGWAY_ROUTE_TIMEOUT_SECONDS", "120")),
+        # v2 toggles
+        route_optimization_v2=_env_bool("ROUTE_OPTIMIZATION_V2", True),
+        haversine_topk=int(os.getenv("HAVERSINE_TOPK", "3")),
+        llm_rule_first=_env_bool("LLM_RULE_FIRST", True),
+        llm_cache_enabled=_env_bool("LLM_CACHE_ENABLED", True),
+        llm_cache_ttl_seconds=int(os.getenv("LLM_CACHE_TTL_SECONDS", "300")),
+        connection_pool_enabled=_env_bool("CONNECTION_POOL_ENABLED", True),
     )

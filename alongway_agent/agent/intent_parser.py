@@ -16,6 +16,9 @@ class IntentParseResult:
     used_fallback: bool
     llm_ms: int
     fallback_reason: Optional[str] = None
+    # ── v2 fields ──
+    llm_called: bool = False
+    cache_hit: bool = False
 
 
 class IntentParser:
@@ -23,9 +26,13 @@ class IntentParser:
         self,
         llm_client: Optional[LLMClient] = None,
         llm_timeout_seconds: float = 3.0,
+        rule_first: bool = True,
+        llm_cache: Optional[object] = None,
     ) -> None:
         self.llm_client = llm_client
         self.llm_timeout_seconds = llm_timeout_seconds
+        self.rule_first = rule_first
+        self.llm_cache = llm_cache
 
     async def parse(
         self,
@@ -49,6 +56,40 @@ class IntentParser:
     ) -> IntentParseResult:
         started = time.perf_counter()
         fallback_reason: Optional[str] = None
+        llm_called = False
+        cache_hit = False
+
+        # ── v2: rule-first path ──
+        if self.rule_first:
+            intent = self._parse_by_rules(user_query, budget, preferences)
+            if intent and intent.tasks:
+                return IntentParseResult(
+                    intent=intent,
+                    used_fallback=False,
+                    llm_ms=int((time.perf_counter() - started) * 1000),
+                    llm_called=False,
+                    cache_hit=False,
+                )
+
+        # ── v2: check LLM cache ──
+        if self.llm_cache is not None:
+            cached = self.llm_cache.get(user_query)
+            if cached is not None:
+                cache_hit = True
+                try:
+                    intent = UserIntent.model_validate(cached)
+                    if intent and intent.tasks:
+                        return IntentParseResult(
+                            intent=intent,
+                            used_fallback=False,
+                            llm_ms=int((time.perf_counter() - started) * 1000),
+                            llm_called=False,
+                            cache_hit=True,
+                        )
+                except Exception:
+                    pass  # Cache data corrupted, fall through to LLM
+
+        # ── v1 path: LLM-first (or v2: rules already tried and failed) ──
         if self.llm_client is not None:
             try:
                 parsed = await asyncio.wait_for(
@@ -59,23 +100,35 @@ class IntentParser:
                     ),
                     timeout=self.llm_timeout_seconds,
                 )
+                llm_called = True
                 intent = self._try_validate_llm_result(parsed, budget, preferences)
                 if intent and intent.tasks:
+                    # Cache successful LLM result
+                    if self.llm_cache is not None and parsed:
+                        self.llm_cache.set(user_query, parsed)
                     return IntentParseResult(
                         intent=intent,
                         used_fallback=False,
                         llm_ms=int((time.perf_counter() - started) * 1000),
+                        llm_called=True,
+                        cache_hit=False,
                     )
-                fallback_reason = "LLM returned no valid tasks"
+                if fallback_reason is None:
+                    fallback_reason = "LLM returned no valid tasks"
             except Exception as exc:
-                fallback_reason = f"LLM failed: {type(exc).__name__}"
+                llm_called = True
+                if fallback_reason is None:
+                    fallback_reason = f"LLM failed: {type(exc).__name__}"
 
+        # ── Final fallback: rule-based parsing ──
         intent = self._parse_by_rules(user_query, budget, preferences)
         return IntentParseResult(
             intent=intent,
             used_fallback=True,
             llm_ms=int((time.perf_counter() - started) * 1000),
             fallback_reason=fallback_reason,
+            llm_called=llm_called,
+            cache_hit=cache_hit,
         )
 
     def _try_validate_llm_result(

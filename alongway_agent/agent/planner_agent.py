@@ -10,11 +10,13 @@ from agent.backend_client import BackendClient, MockBackendClient
 from agent.candidate_generator import CandidateGenerator
 from agent.exceptions import AgentError, ErrorCode
 from agent.explainer import Explainer
+from agent.haversine_filter import HaversinePreFilter
 from agent.intent_parser import IntentParser
 from agent.llm_client import LLMClient, MockLLMClient
 from agent.models import (
     AlternativePlanSummary,
     DebugTrace,
+    EnrichedCandidate,
     Location,
     PlanRequest,
     PlanResponse,
@@ -22,6 +24,7 @@ from agent.models import (
     RouteResult,
     RouteSegment,
 )
+from agent.perf_logger import PerfMetrics
 from agent.route_evaluator import RouteEvaluator
 from agent.scorer import PlanScorer
 
@@ -36,20 +39,35 @@ class PlanAgent:
         llm_timeout_seconds: float = 3.0,
         poi_timeout_seconds: float = 3.0,
         route_timeout_seconds: float = 3.0,
+        # ── v2 parameters ──
+        v2_enabled: bool = True,
+        haversine_filter: Optional[HaversinePreFilter] = None,
+        llm_cache: Optional[object] = None,
+        rule_first: bool = True,
     ) -> None:
         self.backend_client = backend_client or MockBackendClient()
         self.llm_client = llm_client or MockLLMClient()
-        self.intent_parser = IntentParser(self.llm_client, llm_timeout_seconds)
+        self.intent_parser = IntentParser(
+            self.llm_client,
+            llm_timeout_seconds,
+            rule_first=rule_first,
+            llm_cache=llm_cache,
+        )
         self.candidate_generator = CandidateGenerator(self.backend_client)
         self.route_evaluator = RouteEvaluator(self.backend_client)
         self.scorer = PlanScorer()
         self.explainer = Explainer(self.llm_client)
         self.poi_timeout_seconds = poi_timeout_seconds
         self.route_timeout_seconds = route_timeout_seconds
+        self.v2_enabled = v2_enabled
+        self.haversine_filter = haversine_filter
 
     async def plan(self, request: PlanRequest) -> PlanResponse:
         total_started = time.perf_counter()
         timings: dict[str, int] = {}
+        metrics = PerfMetrics(request_id=request.request_id or "unknown")
+        metrics.start()
+
         try:
             self._validate_user_query(request)
 
@@ -60,6 +78,10 @@ class PlanAgent:
             )
             intent = parse_result.intent
             timings["llm_ms"] = parse_result.llm_ms
+            metrics.intent_parse_ms = parse_result.llm_ms
+            metrics.llm_called = parse_result.llm_called
+            metrics.llm_cache_hit = parse_result.cache_hit
+            metrics.rule_parse_used = parse_result.used_fallback
 
             start, end = await asyncio.gather(
                 self._resolve_start(request, intent.start_text),
@@ -98,6 +120,22 @@ class PlanAgent:
             )
             timings["base_route_ms"] = int((time.perf_counter() - route_started) * 1000)
             timings["poi_ms"] = int((time.perf_counter() - poi_started) * 1000)
+            metrics.base_route_ms = timings["base_route_ms"]
+            metrics.poi_candidates_total = candidate_result.poi_candidate_count
+            metrics.task_count = len(intent.tasks)
+
+            # ── v2: Haversine pre-filter ──
+            candidates_by_task = candidate_result.candidates_by_task
+            if self.v2_enabled and self.haversine_filter is not None:
+                filtered = self.haversine_filter.filter(start, end, candidates_by_task)
+                haversine_count = sum(len(v) for v in filtered.values())
+                metrics.haversine_topk_used = True
+                metrics.haversine_topk_count = haversine_count
+                # Unwrap filtered candidates back to EnrichedCandidate lists
+                candidates_by_task = {
+                    task_id: [fc.candidate for fc in fcs]
+                    for task_id, fcs in filtered.items()
+                }
 
             route_started = time.perf_counter()
             route_result = await self.route_evaluator.evaluate(
@@ -105,11 +143,27 @@ class PlanAgent:
                 start=start,
                 end=end,
                 tasks=intent.tasks,
-                candidates_by_task=candidate_result.candidates_by_task,
+                candidates_by_task=candidates_by_task,
                 base_route=base_route,
                 timeout_seconds=self.route_timeout_seconds,
             )
             timings["route_ms"] = int((time.perf_counter() - route_started) * 1000)
+            metrics.amap_route_total_ms = timings["route_ms"]
+            metrics.candidate_routes_evaluated = route_result.route_candidate_count
+
+            # Estimate Amap route call count:
+            # Each candidate route is a multi-point route: start→...→end
+            # For N candidates, there are ~(poi_count_in_route) * N segments
+            # The base route is 1 segment (start→end)
+            # Approximate: base (1) + routes_evaluated * avg_points_per_route
+            avg_points = sum(
+                len(intent.tasks) for _ in range(route_result.route_candidate_count)
+            ) if route_result.route_candidate_count > 0 else 0
+            # Each evaluated route with k POIs = k+1 segments
+            # With Haversine topk, routes have fewer POIs
+            est_segments = 1 + route_result.route_candidate_count * (len(intent.tasks) + 1)
+            metrics.amap_route_calls_count = est_segments
+
             relaxed_route_constraints = False
 
             if not route_result.plans and candidate_result.poi_candidate_count > 0:
@@ -131,11 +185,12 @@ class PlanAgent:
                     start=start,
                     end=end,
                     tasks=intent.tasks,
-                    candidates_by_task=candidate_result.candidates_by_task,
+                    candidates_by_task=candidates_by_task,
                     base_route=base_route,
                     timeout_seconds=self.route_timeout_seconds,
                 )
                 relaxed_route_constraints = bool(route_result.plans)
+                metrics.candidate_routes_evaluated += route_result.route_candidate_count
 
             if not route_result.plans:
                 raise AgentError(
@@ -174,6 +229,9 @@ class PlanAgent:
                 warnings.append(parse_result.fallback_reason)
 
             timings["total_ms"] = int((time.perf_counter() - total_started) * 1000)
+            metrics.warnings = warnings
+            metrics.selected_poi_count = len(selected_plan.stops) - 2  # minus start/end
+            metrics.log()
             logger.info("Agent plan timings: %s", timings)
 
             return PlanResponse(
@@ -193,10 +251,14 @@ class PlanAgent:
             )
         except AgentError as error:
             timings["total_ms"] = int((time.perf_counter() - total_started) * 1000)
+            metrics.warnings.append(f"error: {error.code.value}")
+            metrics.log()
             logger.info("Agent plan failed timings: %s", timings)
             return self._error_response(request, error)
         except Exception as exc:
             timings["total_ms"] = int((time.perf_counter() - total_started) * 1000)
+            metrics.warnings.append(f"error: {type(exc).__name__}")
+            metrics.log()
             logger.info("Agent plan failed timings: %s", timings)
             return self._error_response(
                 request,

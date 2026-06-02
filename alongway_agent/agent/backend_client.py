@@ -54,31 +54,61 @@ class BackendClient(ABC):
 
 
 class HttpBackendClient(BackendClient):
-    def __init__(self, base_url: str, timeout_seconds: float = 10.0) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        timeout_seconds: float = 10.0,
+        use_connection_pool: bool = True,
+    ) -> None:
         if httpx is None:
             raise RuntimeError("httpx is required to use HttpBackendClient")
         self.base_url = base_url.rstrip("/")
         self.timeout_seconds = timeout_seconds
+        self._use_pool = use_connection_pool
+        self._shared_client: Optional[httpx.AsyncClient] = None
+
+    def _get_client(self) -> httpx.AsyncClient:
+        """Get or create an httpx AsyncClient.
+
+        When connection pooling is enabled, a shared client is reused
+        across all requests to avoid the overhead of establishing new
+        TCP/TLS connections for every call.
+        """
+        if self._use_pool:
+            if self._shared_client is None:
+                self._shared_client = httpx.AsyncClient(
+                    timeout=self.timeout_seconds,
+                    trust_env=False,
+                    limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
+                )
+            return self._shared_client
+        return httpx.AsyncClient(timeout=self.timeout_seconds, trust_env=False)
 
     async def _post(self, path: str, payload: dict) -> dict:
-        async with httpx.AsyncClient(timeout=self.timeout_seconds, trust_env=False) as client:
-            try:
-                response = await client.post(f"{self.base_url}{path}", json=payload)
-                response.raise_for_status()
-                data = response.json()
-                log_call(
-                    "agent.backend_client.post.result",
-                    request={"path": path, "payload": payload},
-                    result=data,
-                )
-                return data
-            except Exception as exc:
-                log_call(
-                    "agent.backend_client.post.error",
-                    request={"path": path, "payload": payload},
-                    error=str(exc),
-                )
-                raise
+        client = self._get_client()
+        try:
+            response = await client.post(f"{self.base_url}{path}", json=payload)
+            response.raise_for_status()
+            data = response.json()
+            log_call(
+                "agent.backend_client.post.result",
+                request={"path": path, "payload": payload},
+                result=data,
+            )
+            return data
+        except Exception as exc:
+            log_call(
+                "agent.backend_client.post.error",
+                request={"path": path, "payload": payload},
+                error=str(exc),
+            )
+            raise
+
+    async def close(self) -> None:
+        """Close the shared HTTP client if using connection pool."""
+        if self._shared_client is not None:
+            await self._shared_client.aclose()
+            self._shared_client = None
 
     async def search_pois(
         self,
