@@ -17,7 +17,7 @@ class Settings:
     def __init__(self) -> None:
         self.app_name = "route-deals-backend"
         # Support both DATABASE_URL (for MVP SQLite) and PostgreSQL config
-        self.database_url = os.getenv("DATABASE_URL", "sqlite:///./alongway_mvp.db")
+        self.database_url = os.getenv("DATABASE_URL")
         self.postgres_host = os.getenv("POSTGRES_HOST", "localhost")
         self.postgres_port = int(os.getenv("POSTGRES_PORT", "5432"))
         self.postgres_db = os.getenv("POSTGRES_DB")
