@@ -4,32 +4,48 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>顺路购 · Along-way</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23FFD100'/%3E%3Cpath d='M18 42l10-10 8 8 10-20' fill='none' stroke='%2317140F' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='18' cy='42' r='4' fill='%2317140F'/%3E%3Ccircle cx='46' cy='20' r='4' fill='%2317140F'/%3E%3C/svg%3E" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            brand: {
-              50: '#FFF7ED', 100: '#FFEDD5', 200: '#FED7AA', 300: '#FDBA74',
-              400: '#FB923C', 500: '#F97316', 600: '#EA580C', 700: '#C2410C',
-              800: '#9A3412', 900: '#7C2D12',
+            mt: {
+              yellow: '#FFD100', 'yellow-light': '#FFF3B0', 'yellow-dark': '#E6B800',
+              ink: '#17140F', rice: '#FFF8E6', street: '#F3E7C8',
+              'deal-red': '#FF4D3D', 'deal-red-light': '#FFF0EF',
+              'city-green': '#10B981', 'city-green-light': '#ECFDF5',
+              'night-blue': '#16213A',
             },
-            warm: {
-              bg: '#FAF8F1', card: '#FFFFFF', text: '#2C2C2A',
-              muted: '#6B6B68', border: '#E6E4DD',
+            ink: {
+              50: '#F7F5F0', 100: '#EDE9DF', 200: '#D9D2C3',
+              300: '#B8AE9A', 400: '#978B74', 500: '#6B6155',
+              600: '#4A4239', 700: '#332D26', 800: '#231F1A', 900: '#17140F',
             }
           },
           fontFamily: {
-            sans: ['"Inter"', '"Noto Sans SC"', 'system-ui', 'sans-serif'],
-            display: ['"Space Grotesk"', '"Noto Sans SC"', 'system-ui', 'sans-serif'],
+            sans: ['"Noto Sans SC"', '"Inter"', 'system-ui', '-apple-system', 'sans-serif'],
+            display: ['"Noto Sans SC"', '"Inter"', 'system-ui', 'sans-serif'],
+            mono: ['"Inter"', 'ui-monospace', 'monospace'],
           },
           boxShadow: {
-            'card': '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
-            'card-hover': '0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)',
-            'float': '0 8px 30px rgba(0,0,0,0.1)',
-            'glow': '0 0 20px rgba(249,115,22,0.15), 0 0 40px rgba(249,115,22,0.05)',
-            'btn-press': 'inset 0 2px 4px rgba(0,0,0,0.15)',
+            'card': '0 1px 4px rgba(23,20,15,0.06), 0 1px 2px rgba(23,20,15,0.04)',
+            'card-hover': '0 6px 20px rgba(23,20,15,0.1), 0 2px 6px rgba(23,20,15,0.05)',
+            'float': '0 12px 40px rgba(23,20,15,0.12)',
+            'glow-yellow': '0 0 24px rgba(255,209,0,0.2), 0 0 48px rgba(255,209,0,0.06)',
+            'glow-red': '0 0 16px rgba(255,77,61,0.15)',
+            'btn-press': 'inset 0 2px 4px rgba(23,20,15,0.18)',
+            'ticket': '0 2px 8px rgba(23,20,15,0.08)',
+            'ticket-hover': '0 4px 16px rgba(23,20,15,0.12), 0 2px 4px rgba(23,20,15,0.06)',
+            'header': '0 1px 8px rgba(23,20,15,0.05)',
+          },
+          borderRadius: {
+            'ticket': '12px',
+          },
+          backgroundImage: {
+            'grid-city': 'linear-gradient(rgba(243,231,200,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(243,231,200,0.3) 1px, transparent 1px)',
+            'ticket-edge': 'radial-gradient(circle, transparent 5px, white 5px)',
           },
         }
       }
@@ -37,66 +53,201 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     html { -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
-    body { background: #FAF8F1; color: #2C2C2A; font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif; min-height: 100dvh; margin: 0; }
+    body {
+      background: #FFF8E6;
+      color: #17140F;
+      font-family: 'Noto Sans SC', 'Inter', system-ui, -apple-system, sans-serif;
+      min-height: 100dvh;
+      margin: 0;
+    }
 
-    @keyframes fadeInUp { 0% { opacity:0; transform:translateY(12px); } 100% { opacity:1; transform:translateY(0); } }
-    @keyframes bounceIn { 0% { opacity:0; transform:scale(0); } 50% { transform:scale(1.1); } 100% { opacity:1; transform:scale(1); } }
+    /* ─── City street background texture ───────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(243,231,200,0.25) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(243,231,200,0.25) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.6;
+    }
+
+    /* ─── Ticket voucher styling ───────────────────────── */
+    .ticket-card {
+      position: relative;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .ticket-card::before,
+    .ticket-card::after {
+      content: '';
+      position: absolute;
+      width: 20px; height: 20px;
+      background: #FFF8E6;
+      border-radius: 50%;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+    }
+    .ticket-card::before { left: -10px; }
+    .ticket-card::after { right: -10px; }
+
+    .ticket-divider {
+      border-top: 2px dashed rgba(23,20,15,0.08);
+      margin: 0 -16px;
+      padding: 0 16px;
+    }
+
+    /* ─── Serrated edge for deal cards ─────────────────── */
+    .deal-ticket {
+      position: relative;
+      background: white;
+      border-radius: 12px;
+      overflow: visible;
+    }
+    .deal-ticket::before,
+    .deal-ticket::after {
+      content: '';
+      position: absolute;
+      width: 16px; height: 16px;
+      background: #FFF8E6;
+      border-radius: 50%;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+    }
+    .deal-ticket::before { left: -8px; }
+    .deal-ticket::after { right: -8px; }
+
+    .deal-ticket-inner {
+      position: relative;
+      overflow: hidden;
+    }
+    .deal-ticket-inner::before {
+      content: '';
+      position: absolute;
+      left: 33%; top: -1px; bottom: -1px;
+      width: 1px;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(23,20,15,0.08) 0px,
+        rgba(23,20,15,0.08) 4px,
+        transparent 4px,
+        transparent 8px
+      );
+    }
+
+    /* ─── Animations ──────────────────────────────────── */
+    @keyframes fadeInUp { 0% { opacity:0; transform:translateY(16px); } 100% { opacity:1; transform:translateY(0); } }
+    @keyframes fadeInScale { 0% { opacity:0; transform:scale(0.92); } 100% { opacity:1; transform:scale(1); } }
+    @keyframes bounceIn { 0% { opacity:0; transform:scale(0); } 50% { transform:scale(1.12); } 100% { opacity:1; transform:scale(1); } }
     @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
     @keyframes drawLine { 0% { stroke-dashoffset: 1200; } 100% { stroke-dashoffset: 0; } }
-    @keyframes pulseDot { 0%,100% { transform:scale(1); opacity:1; } 50% { transform:scale(1.6); opacity:0.3; } }
+    @keyframes pulseDot { 0%,100% { transform:scale(1); opacity:1; } 50% { transform:scale(1.5); opacity:0.4; } }
     @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes spinReverse { to { transform: rotate(-360deg); } }
-    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-    @keyframes glowPulse { 0%,100% { box-shadow: 0 0 12px rgba(249,115,22,0.15); } 50% { box-shadow: 0 0 28px rgba(249,115,22,0.25), 0 0 48px rgba(249,115,22,0.08); } }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    @keyframes glowPulse { 0%,100% { box-shadow: 0 0 8px rgba(255,209,0,0.2); } 50% { box-shadow: 0 0 20px rgba(255,209,0,0.35), 0 0 40px rgba(255,209,0,0.1); } }
     @keyframes routeFlow { 0% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -24; } }
-    @keyframes softFloat { 0%,100% { transform: translateY(0) rotate(0deg); } 33% { transform: translateY(-4px) rotate(0.5deg); } 66% { transform: translateY(2px) rotate(-0.3deg); } }
+    @keyframes softFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
     @keyframes sheen { 0% { left: -100%; } 50%,100% { left: 100%; } }
-    @keyframes cardLift { 0% { transform: translateY(0) scale(1); } 100% { transform: translateY(-2px) scale(1.005); } }
-    @keyframes nodeAppear { 0% { r: 0; opacity: 0; } 60% { opacity: 1; } 100% { r: inherit; opacity: 1; } }
-    @keyframes dotTravel { 0% { offset-distance: 0%; opacity: 0; } 5% { opacity: 1; } 90% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
-    @keyframes loadingPulse { 0%,100% { opacity: 0.4; transform: scale(0.95); } 50% { opacity: 1; transform: scale(1); } }
+    @keyframes slideInRight { 0% { opacity:0; transform:translateX(20px); } 100% { opacity:1; transform:translateX(0); } }
+    @keyframes slideInUp { 0% { opacity:0; transform:translateY(20px); } 100% { opacity:1; transform:translateY(0); } }
+    @keyframes ticketPrint { 0% { opacity:0; transform:translateY(-10px) scale(0.98); } 100% { opacity:1; transform:translateY(0) scale(1); } }
+    @keyframes toastIn { 0% { opacity:0; transform:translateY(16px) scale(0.95); } 100% { opacity:1; transform:translateY(0) scale(1); } }
+    @keyframes toastOut { 0% { opacity:1; transform:translateY(0) scale(1); } 100% { opacity:0; transform:translateY(-8px) scale(0.95); } }
+    @keyframes stampPress { 0% { transform:scale(1.3) rotate(-8deg); opacity:0; } 60% { transform:scale(0.95) rotate(2deg); opacity:1; } 100% { transform:scale(1) rotate(0deg); opacity:1; } }
+    @keyframes tagPop { 0% { transform:scale(0.9); } 50% { transform:scale(1.08); } 100% { transform:scale(1); } }
     @keyframes scanLine { 0% { top: -2px; } 100% { top: 100%; } }
 
-    .animate-fade-in-up { animation: fadeInUp 0.5s ease-out both; }
+    .animate-fade-in-up { animation: fadeInUp 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+    .animate-fade-in-scale { animation: fadeInScale 0.4s cubic-bezier(0.22,1,0.36,1) both; }
+    .animate-slide-in-right { animation: slideInRight 0.4s cubic-bezier(0.22,1,0.36,1) both; }
+    .animate-ticket-print { animation: ticketPrint 0.5s cubic-bezier(0.22,1,0.36,1) both; }
     .animate-bounce-in { animation: bounceIn 0.4s cubic-bezier(0.68,-0.55,0.265,1.55) both; }
+    .animate-stamp { animation: stampPress 0.5s cubic-bezier(0.22,1,0.36,1) both; }
     .stagger-1 { animation-delay: 0.05s; } .stagger-2 { animation-delay: 0.10s; }
     .stagger-3 { animation-delay: 0.15s; } .stagger-4 { animation-delay: 0.20s; }
     .stagger-5 { animation-delay: 0.25s; } .stagger-6 { animation-delay: 0.30s; }
 
-    .route-path { stroke-dasharray: 1200; stroke-dashoffset: 1200; transition: stroke-dashoffset 1.8s ease-out; }
+    .route-path { stroke-dasharray: 1200; stroke-dashoffset: 1200; transition: stroke-dashoffset 2s cubic-bezier(0.22,1,0.36,1); }
     .route-path.drawn { stroke-dashoffset: 0; }
     .route-flow { animation: routeFlow 1.5s linear infinite; }
 
-    .card-hover-lift { transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease; }
-    .card-hover-lift:hover { transform: translateY(-2px) scale(1.005); box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04); }
+    .card-hover-lift { transition: transform 0.3s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease, border-color 0.3s ease; }
+    .card-hover-lift:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(23,20,15,0.1), 0 2px 6px rgba(23,20,15,0.05); }
+    .card-hover-lift:active { transform: translateY(-1px) scale(0.995); }
 
-    .btn-press { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .btn-press { transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.2s ease; }
     .btn-press:hover { transform: translateY(-1px); }
-    .btn-press:active { transform: translateY(1px) scale(0.98); box-shadow: inset 0 2px 4px rgba(0,0,0,0.15); }
+    .btn-press:active { transform: translateY(1px) scale(0.97); box-shadow: inset 0 2px 4px rgba(23,20,15,0.15); }
 
     .sheen-wrap { position: relative; overflow: hidden; }
-    .sheen-wrap::after { content:''; position:absolute; top:0; left:-100%; width:50%; height:100%; background:linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); }
+    .sheen-wrap::after { content:''; position:absolute; top:0; left:-100%; width:50%; height:100%; background:linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); }
     .sheen-wrap:hover::after { animation: sheen 0.6s ease-out; }
 
-    .search-glow { transition: box-shadow 0.3s ease; }
-    .search-glow:focus-within { box-shadow: 0 0 0 3px rgba(249,115,22,0.15), 0 0 20px rgba(249,115,22,0.1); }
+    .search-glow { transition: box-shadow 0.35s ease, border-color 0.35s ease; }
+    .search-glow:focus-within { box-shadow: 0 0 0 3px rgba(255,209,0,0.2), 0 0 24px rgba(255,209,0,0.12); }
 
-    .pref-tag { transition: all 0.2s cubic-bezier(0.4,0,0.2,1); }
-    .pref-tag:hover { transform: translateY(-1px); }
-    .pref-tag:active { transform: translateY(0) scale(0.97); }
+    .pref-tag {
+      transition: all 0.2s cubic-bezier(0.22,1,0.36,1);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .pref-tag:hover { transform: translateY(-2px); }
+    .pref-tag:active { transform: translateY(0) scale(0.95); }
     .pref-tag[data-active="true"] { animation: glowPulse 3s ease-in-out infinite; }
+    .pref-tag[data-active="true"]:active { animation: tagPop 0.3s ease; }
 
-    .deal-expand-enter { overflow: hidden; max-height: 0; opacity: 0; transition: max-height 0.4s ease, opacity 0.3s ease; }
-    .deal-expand-active { max-height: 2000px; opacity: 1; }
+    .example-card {
+      transition: all 0.25s cubic-bezier(0.22,1,0.36,1);
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .example-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(23,20,15,0.08); }
+    .example-card:active { transform: scale(0.97); }
 
-    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #E6E4DD; border-radius: 100px; }
+    .data-capsule {
+      animation: fadeInUp 0.5s cubic-bezier(0.22,1,0.36,1) both;
+      transition: transform 0.2s ease;
+    }
+    .data-capsule:hover { transform: scale(1.03); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #D9D2C3; border-radius: 100px; }
 
     .particle-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    /* Toast notification */
+    .toast-enter { animation: toastIn 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+    .toast-exit { animation: toastOut 0.25s ease both; }
+
+    /* Hero background pattern */
+    .hero-pattern {
+      background-image:
+        radial-gradient(circle at 20% 80%, rgba(255,209,0,0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255,77,61,0.05) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(16,185,129,0.04) 0%, transparent 60%);
+    }
+
+    /* Ticket stamp effect */
+    .stamp-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      border: 1.5px solid;
+    }
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
@@ -105,6 +256,8 @@
       .card-hover-lift:hover { transform: none; }
       .btn-press:hover, .btn-press:active { transform: none; }
       .pref-tag:hover, .pref-tag:active { transform: none; }
+      .example-card:hover, .example-card:active { transform: none; }
+      .data-capsule:hover { transform: none; }
     }
   </style>
 </head>
@@ -121,7 +274,7 @@
     // ─── REDUCED MOTION CHECK ───────────────────────────────────────
     const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // ─── MOCK DATA ──────────────────────────────────────────────────
+    // ─── MOCK DATA (unchanged) ─────────────────────────────────────
     const MOCK_PLAN_RESULT = {
       success: true,
       request_id: "demo-001",
@@ -200,13 +353,13 @@
     };
 
     const EXAMPLE_QUERIES = [
-      "从武大去光谷，顺路找点吃的",
-      "从汉口火车站到江汉路，想喝杯咖啡",
-      "从武汉大学到光谷广场，预算100以内",
-      "从街道口到光谷步行街，找点甜品"
+      { text: "从武大去光谷，顺路找点吃的", tag: "饭点灵感", icon: "🍜" },
+      { text: "从汉口火车站到江汉路，想喝杯咖啡", tag: "路过歇脚", icon: "☕" },
+      { text: "从武汉大学到光谷广场，预算100以内", tag: "省钱路线", icon: "💰" },
+      { text: "从街道口到光谷步行街，找点甜品", tag: "下午茶", icon: "🍰" },
     ];
 
-    // ─── API CLIENT ─────────────────────────────────────────────────
+    // ─── API CLIENT (unchanged) ────────────────────────────────────
     const USE_MOCK = false;
     const BASE_URL = 'http://127.0.0.1:8000';
 
@@ -233,44 +386,29 @@
       return null;
     }
 
-    function getCurrentLocation(timeoutMs = 2500) {
-      if (!navigator.geolocation) return Promise.resolve(null);
-      return new Promise(resolve => {
-        const timer = setTimeout(() => resolve(null), timeoutMs);
-        navigator.geolocation.getCurrentPosition(
-          pos => {
-            clearTimeout(timer);
-            resolve({
-              name: '当前位置',
-              address: '浏览器定位',
-              location: `${pos.coords.longitude},${pos.coords.latitude}`,
-              longitude: pos.coords.longitude,
-              latitude: pos.coords.latitude,
-              accuracy_meters: pos.coords.accuracy,
-              source: 'browser_geolocation',
-            });
-          },
-          () => {
-            clearTimeout(timer);
-            resolve(null);
-          },
-          { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 60000 }
-        );
-      });
-    }
-
-    async function submitPlan({ userQuery, travelMode = 'walking', budget, preferences, currentLocation }) {
+    async function submitPlan({ userQuery, travelMode = 'walking', budget, preferences }) {
       if (USE_MOCK) {
         await new Promise(r => setTimeout(r, 1800 + Math.random() * 1200));
         return MOCK_PLAN_RESULT;
       }
 
+      const match = userQuery.match(/从(.+?)(?:到|去|→|前往)(.+)/);
+      let start, end;
+      if (match) {
+        start = extractLocation(match[1]) || Object.values(LOCATION_MAP)[0];
+        end = extractLocation(match[2]) || Object.values(LOCATION_MAP)[1];
+      } else {
+        start = Object.values(LOCATION_MAP)[0];
+        end = Object.values(LOCATION_MAP)[1];
+      }
+
       const payload = {
         request_id: generateUUID(),
         user_query: userQuery,
+        start_location: { name: start.name, address: start.address, location: start.name, longitude: start.longitude, latitude: start.latitude },
+        end_location: { name: end.name, address: end.address, location: end.name, longitude: end.longitude, latitude: end.latitude },
         city: '武汉',
         travel_mode: travelMode,
-        ...(currentLocation && { current_location: currentLocation }),
         ...(budget && { budget }),
         ...(preferences && { preferences }),
       };
@@ -288,10 +426,10 @@
       return res.json();
     }
 
-    // ─── SVG ICONS ──────────────────────────────────────────────────
+    // ─── SVG ICONS ─────────────────────────────────────────────────
     const Icons = {
       Route: ({ className = "w-6 h-6" }) => (
-        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M3 17l4-4 4 4 4-8 4 4"/><circle cx="3" cy="17" r="1.5" fill="currentColor"/><circle cx="19" cy="13" r="1.5" fill="currentColor"/>
         </svg>
       ),
@@ -369,13 +507,51 @@
           <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>
         </svg>
       ),
+      Fire: ({ className = "w-4 h-4" }) => (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+        </svg>
+      ),
+      Check: ({ className = "w-4 h-4" }) => (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      ),
+      Copy: ({ className = "w-4 h-4" }) => (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+        </svg>
+      ),
+      Footprints: ({ className = "w-4 h-4" }) => (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5 10 7.89 8 10 8 12h4c0-1.5-.63-3.5-2-5 0 0 3 0 3 4.5 0 3.5-2.5 5.5-2.5 8V16"/>
+          <path d="M18 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C12.63 6 12 7.8 12 9.5c0 2.39 2 4.5 2 6.5h-4c0-1.5.63-3.5 2-5 0 0-3 0-3 4.5 0 3.5 2.5 5.5 2.5 8V20"/>
+        </svg>
+      ),
     };
 
-    // ─── PARTICLE FIELD ─────────────────────────────────────────────
+    // ─── TOAST SYSTEM ──────────────────────────────────────────────
+    function Toast({ message, visible, onDone }) {
+      useEffect(() => {
+        if (visible) {
+          const t = setTimeout(onDone, 2000);
+          return () => clearTimeout(t);
+        }
+      }, [visible, onDone]);
+
+      if (!visible) return null;
+      return (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[200] toast-enter">
+          <div className="bg-ink-900 text-white text-sm font-medium px-5 py-3 rounded-xl shadow-float flex items-center gap-2">
+            <Icons.Check className="w-4 h-4 text-mt-yellow"/>
+            {message}
+          </div>
+        </div>
+      );
+    }
+
+    // ─── PARTICLE FIELD ────────────────────────────────────────────
     function ParticleField({ intensity = 1 }) {
       const canvasRef = useRef(null);
       const animRef = useRef(null);
-      const particlesRef = useRef([]);
 
       useEffect(() => {
         if (prefersReducedMotion) return;
@@ -384,7 +560,7 @@
         const ctx = canvas.getContext('2d');
 
         const isMobile = window.innerWidth < 640;
-        const maxCount = isMobile ? 36 : 80;
+        const maxCount = isMobile ? 30 : 60;
         const count = Math.round(maxCount * intensity);
 
         let w, h;
@@ -395,58 +571,47 @@
         resize();
         window.addEventListener('resize', resize);
 
-        // init particles
         const particles = [];
         for (let i = 0; i < count; i++) {
           particles.push({
             x: Math.random() * w,
             y: Math.random() * h,
-            vx: (Math.random() - 0.5) * 0.3,
-            vy: (Math.random() - 0.5) * 0.2 - 0.1,
-            r: Math.random() * 1.8 + 0.5,
-            alpha: Math.random() * 0.3 + 0.05,
+            vx: (Math.random() - 0.5) * 0.25,
+            vy: (Math.random() - 0.5) * 0.15 - 0.08,
+            r: Math.random() * 1.5 + 0.5,
+            alpha: Math.random() * 0.2 + 0.03,
             pulse: Math.random() * Math.PI * 2,
-            pulseSpeed: Math.random() * 0.015 + 0.005,
+            pulseSpeed: Math.random() * 0.012 + 0.004,
           });
         }
-        particlesRef.current = particles;
 
-        // connection line color (warm orange, low opacity)
-        const lineColor = 'rgba(249,115,22,';
-        const dotColor = 'rgba(249,115,22,'; // warm brand
-        const linkDist = isMobile ? 90 : 120;
+        const lineColor = 'rgba(255,209,0,';
+        const dotColor = 'rgba(255,209,0,';
+        const linkDist = isMobile ? 80 : 110;
 
         const draw = () => {
           ctx.clearRect(0, 0, w, h);
 
           for (let i = 0; i < particles.length; i++) {
             const p = particles[i];
-            p.x += p.vx;
-            p.y += p.vy;
-            p.pulse += p.pulseSpeed;
-
-            // wrap
+            p.x += p.vx; p.y += p.vy; p.pulse += p.pulseSpeed;
             if (p.x < -10) p.x = w + 10;
             if (p.x > w + 10) p.x = -10;
             if (p.y < -10) p.y = h + 10;
             if (p.y > h + 10) p.y = -10;
 
             const alpha = p.alpha * (0.6 + 0.4 * Math.sin(p.pulse));
-
-            // draw dot
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
             ctx.fillStyle = dotColor + alpha + ')';
             ctx.fill();
 
-            // draw connections
             for (let j = i + 1; j < particles.length; j++) {
               const q = particles[j];
-              const dx = p.x - q.x;
-              const dy = p.y - q.y;
+              const dx = p.x - q.x, dy = p.y - q.y;
               const dist = Math.sqrt(dx * dx + dy * dy);
               if (dist < linkDist) {
-                const la = (1 - dist / linkDist) * 0.08;
+                const la = (1 - dist / linkDist) * 0.06;
                 ctx.beginPath();
                 ctx.moveTo(p.x, p.y);
                 ctx.lineTo(q.x, q.y);
@@ -460,7 +625,6 @@
         };
 
         draw();
-
         return () => {
           window.removeEventListener('resize', resize);
           if (animRef.current) cancelAnimationFrame(animRef.current);
@@ -468,35 +632,42 @@
       }, [intensity]);
 
       if (prefersReducedMotion) return null;
-
       return <canvas ref={canvasRef} className="particle-canvas" />;
     }
 
-    // ─── HEADER ─────────────────────────────────────────────────────
+    // ─── HEADER (local-life product bar) ───────────────────────────
     function Header({ showBack, onBack }) {
       return (
-        <header className="sticky top-0 z-50 bg-warm-bg/80 backdrop-blur-xl border-b border-warm-border/60">
+        <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-mt-street shadow-header">
           <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               {showBack && (
-                <button onClick={onBack} className="mr-1 -ml-1 w-9 h-9 flex items-center justify-center rounded-xl hover:bg-warm-border/50 transition-colors cursor-pointer btn-press" aria-label="返回">
-                  <Icons.ArrowLeft className="w-5 h-5" />
+                <button onClick={onBack} className="mr-0.5 -ml-1 w-9 h-9 flex items-center justify-center rounded-xl hover:bg-mt-street transition-colors cursor-pointer btn-press" aria-label="返回">
+                  <Icons.ArrowLeft className="w-5 h-5 text-ink-700"/>
                 </button>
               )}
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-sm">
-                  <Icons.Route className="w-4 h-4 text-white" />
+                <div className="w-8 h-8 rounded-lg bg-mt-yellow flex items-center justify-center" style={{boxShadow:'0 2px 8px rgba(255,209,0,0.3)'}}>
+                  <Icons.Route className="w-4 h-4 text-ink-900"/>
                 </div>
-                <h1 className="font-display text-lg font-bold tracking-tight text-warm-text">顺路购</h1>
+                <div>
+                  <h1 className="font-display text-base font-bold tracking-tight text-ink-900 leading-none">顺路购</h1>
+                  <p className="text-[10px] text-ink-400 leading-none mt-0.5">Along-way</p>
+                </div>
               </div>
             </div>
-            <span className="text-xs font-medium text-warm-muted bg-warm-border/40 px-2.5 py-1 rounded-full">Along-way</span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 text-xs text-ink-500 bg-mt-street/60 px-2.5 py-1 rounded-full">
+                <Icons.Footprints className="w-3.5 h-3.5"/>
+                <span>步行模式</span>
+              </div>
+            </div>
           </div>
         </header>
       );
     }
 
-    // ─── PREFERENCE TAGS ────────────────────────────────────────────
+    // ─── PREFERENCE TAGS (Meituan chips) ───────────────────────────
     const PREF_TAGS = [
       { key: 'prefer_low_price',    label: '低价优先',  emoji: '💰' },
       { key: 'prefer_high_rating',  label: '高分优先',  emoji: '⭐' },
@@ -513,9 +684,12 @@
             return (
               <button key={key} onClick={() => onChange({ ...preferences, [key]: !preferences[key] })}
                 data-active={active ? "true" : "false"}
-                className={`pref-tag inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-medium cursor-pointer ${active ? 'bg-brand-500 text-white shadow-sm ring-1 ring-brand-600/20' : 'bg-white text-warm-muted border border-warm-border hover:border-brand-300 hover:text-warm-text hover:bg-brand-50/50'}`}
+                className={`pref-tag inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-medium cursor-pointer border ${active
+                  ? 'bg-mt-yellow text-ink-900 border-mt-yellow-dark shadow-sm'
+                  : 'bg-white text-ink-500 border-ink-200 hover:border-mt-yellow/50 hover:text-ink-700 hover:bg-mt-rice'}`}
                 aria-pressed={active}>
-                <span className="text-xs">{emoji}</span>{label}
+                <span className="text-sm">{emoji}</span>{label}
+                {active && <Icons.Check className="w-3 h-3 ml-0.5"/>}
               </button>
             );
           })}
@@ -523,7 +697,7 @@
       );
     }
 
-    // ─── MAP VIEW ───────────────────────────────────────────────────
+    // ─── MAP VIEW (warm city street style) ─────────────────────────
     function normalizeCoords(waypoints) {
       const lngs = waypoints.map(w => w.longitude), lats = waypoints.map(w => w.latitude);
       const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
@@ -552,63 +726,71 @@
       useEffect(() => { const t = setTimeout(() => setDrawn(true), 100); return () => clearTimeout(t); }, []);
       const points = normalizeCoords(waypoints);
       const pathD = smoothPath(points);
-      const colors = { origin: '#22C55E', destination: '#EF4444', poi: '#F97316' };
+      const colors = { origin: '#10B981', destination: '#FF4D3D', poi: '#FFD100' };
 
       return (
-        <div className="relative w-full rounded-2xl overflow-hidden bg-gradient-to-br from-blue-50/50 to-green-50/30 border border-warm-border">
+        <div className="relative w-full rounded-2xl overflow-hidden border border-mt-street" style={{background:'linear-gradient(135deg, #FFF8E6 0%, #F3E7C8 100%)'}}>
           <svg viewBox="0 0 600 360" className="w-full h-auto" style={{ minHeight: 220 }}>
             <defs>
               <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
-                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#E5E7EB" strokeWidth="0.5" opacity="0.5"/>
+                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(23,20,15,0.04)" strokeWidth="0.5"/>
               </pattern>
               <filter id="routeGlow">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+                <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
                 <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
               </filter>
+              <filter id="buildingShadow">
+                <feDropShadow dx="1" dy="1" stdDeviation="2" floodOpacity="0.08"/>
+              </filter>
             </defs>
-            <rect width="600" height="360" fill="#F8FAFC"/><rect width="600" height="360" fill="url(#grid)"/>
-            {/* buildings */}
+            <rect width="600" height="360" fill="#FFF8E6"/>
+            <rect width="600" height="360" fill="url(#grid)"/>
+            {/* city blocks - warm beige buildings */}
             {[[40,30,120,80],[180,20,90,100],[300,40,110,70],[440,30,100,90],[60,160,100,60],[200,150,130,70],[360,170,100,80],[80,260,120,60],[250,280,100,50],[400,250,130,70]].map(([x,y,w,h],i) => (
-              <rect key={i} x={x} y={y} width={w} height={h} rx="4" fill="#F3F4F6" stroke="#E5E7EB" strokeWidth="0.5"/>
+              <rect key={i} x={x} y={y} width={w} height={h} rx="4" fill={i%3===0?'#F3E7C8':'#EDE9DF'} stroke="rgba(23,20,15,0.06)" strokeWidth="0.5" filter="url(#buildingShadow)"/>
             ))}
-            {/* parks */}
-            <ellipse cx="520" cy="310" rx="50" ry="35" fill="#DCFCE7" opacity="0.5"/>
-            <ellipse cx="100" cy="140" rx="30" ry="20" fill="#DCFCE7" opacity="0.4"/>
+            {/* street trees */}
+            {[[170,130],[310,120],[450,155],[140,250],[320,260]].map(([cx,cy],i) => (
+              <g key={`tree-${i}`}>
+                <circle cx={cx} cy={cy} r="12" fill="#10B981" opacity="0.12"/>
+                <circle cx={cx} cy={cy} r="7" fill="#10B981" opacity="0.2"/>
+                <circle cx={cx} cy={cy} r="3" fill="#10B981" opacity="0.35"/>
+              </g>
+            ))}
             {/* route glow */}
-            <path d={pathD} fill="none" stroke="#FED7AA" strokeWidth="14" strokeLinecap="round" opacity="0.4" filter="url(#routeGlow)"/>
+            <path d={pathD} fill="none" stroke="rgba(255,209,0,0.15)" strokeWidth="18" strokeLinecap="round" filter="url(#routeGlow)"/>
             {/* route shadow */}
-            <path d={pathD} fill="none" stroke="#FED7AA" strokeWidth="12" strokeLinecap="round" opacity="0.6"/>
+            <path d={pathD} fill="none" stroke="rgba(255,209,0,0.2)" strokeWidth="10" strokeLinecap="round"/>
             {/* route line */}
-            <path d={pathD} fill="none" stroke="#F97316" strokeWidth="3.5" strokeLinecap="round" className={`route-path ${drawn ? 'drawn' : ''}`}/>
+            <path d={pathD} fill="none" stroke="#FFD100" strokeWidth="4" strokeLinecap="round" className={`route-path ${drawn ? 'drawn' : ''}`}/>
             {/* flowing dash overlay */}
-            <path d={pathD} fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeDasharray="4 12" className="route-flow"/>
+            <path d={pathD} fill="none" stroke="rgba(23,20,15,0.15)" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="3 10" className="route-flow"/>
             {/* traveling light dots */}
             {drawn && !prefersReducedMotion && [0,1,2].map(i => (
-              <circle key={`dot-${i}`} r="3.5" fill="#F97316" opacity="0.9">
+              <circle key={`dot-${i}`} r="3" fill="#FFD100" stroke="white" strokeWidth="1.5">
                 <animateMotion dur={`${3 + i * 1.2}s`} repeatCount="indefinite" begin={`${i * 1}s`}>
                   <mpath href={`#routeMotionPath`}/>
                 </animateMotion>
               </circle>
             ))}
-            {/* hidden path for animateMotion */}
             <path id="routeMotionPath" d={pathD} fill="none" stroke="none"/>
             {/* markers */}
             {points.map((p, i) => {
               const isEnd = p.type === 'origin' || p.type === 'destination';
               const color = colors[p.type] || colors.poi;
-              const size = isEnd ? 10 : 7;
+              const size = isEnd ? 11 : 7;
               return (
                 <g key={i} style={{ animation: `bounceIn 0.4s ${0.3 + i * 0.15}s both` }}>
-                  <circle cx={p.x} cy={p.y} r={size+6} fill={color} opacity="0.15">
-                    <animate attributeName="r" values={`${size+4};${size+10};${size+4}`} dur="2.5s" repeatCount="indefinite"/>
-                    <animate attributeName="opacity" values="0.2;0.05;0.2" dur="2.5s" repeatCount="indefinite"/>
+                  <circle cx={p.x} cy={p.y} r={size+7} fill={color} opacity="0.1">
+                    <animate attributeName="r" values={`${size+5};${size+12};${size+5}`} dur="2.5s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity" values="0.15;0.03;0.15" dur="2.5s" repeatCount="indefinite"/>
                   </circle>
                   <circle cx={p.x} cy={p.y} r={size+2} fill="white"/>
-                  <circle cx={p.x} cy={p.y} r={size} fill={color} style={{filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.2))'}}/>
-                  {isEnd && <circle cx={p.x} cy={p.y} r={size-3} fill="white" opacity="0.9"/>}
-                  <foreignObject x={p.x+size+6} y={p.y-12} width="150" height="28">
-                    <div xmlns="http://www.w3.org/1999/xhtml" style={{fontSize:'11px',fontWeight:isEnd?'600':'500',color:'#2C2C2A',background:'rgba(255,255,255,0.92)',backdropFilter:'blur(4px)',padding:'2px 8px',borderRadius:'6px',whiteSpace:'nowrap',boxShadow:'0 1px 3px rgba(0,0,0,0.08)',lineHeight:'24px'}}>
-                      {p.type==='origin'?'🚩 ':p.type==='destination'?'🏁 ':`${p.order}. `}{p.name}
+                  <circle cx={p.x} cy={p.y} r={size} fill={color}/>
+                  {isEnd && <circle cx={p.x} cy={p.y} r={size-4} fill="white" opacity="0.9"/>}
+                  <foreignObject x={p.x+size+8} y={p.y-13} width="160" height="30">
+                    <div xmlns="http://www.w3.org/1999/xhtml" style={{fontSize:'11px',fontWeight:isEnd?'700':'500',color:'#17140F',background:'rgba(255,255,255,0.95)',backdropFilter:'blur(6px)',padding:'3px 10px',borderRadius:'8px',whiteSpace:'nowrap',boxShadow:'0 1px 4px rgba(23,20,15,0.08)',border:'1px solid rgba(243,231,200,0.5)',lineHeight:'24px'}}>
+                      {p.type==='origin'?'🟢 ':p.type==='destination'?'🔴 ':<span style={{color:'#FFD100',fontWeight:700,marginRight:'2px'}}>{p.order}.</span>}{p.name}
                     </div>
                   </foreignObject>
                 </g>
@@ -616,82 +798,102 @@
             })}
           </svg>
           <div className="absolute bottom-3 right-3">
-            <div className="bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[10px] text-warm-muted font-medium shadow-sm border border-warm-border/40">示意图 · 非精确地图</div>
+            <div className="bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[10px] text-ink-400 font-medium shadow-sm border border-mt-street/40">示意图 · 非精确地图</div>
           </div>
         </div>
       );
     }
 
-    // ─── ROUTE SUMMARY ──────────────────────────────────────────────
+    // ─── ROUTE SUMMARY (receipt/bill style) ────────────────────────
     function RouteSummary({ summary }) {
       const stats = [
-        { icon: Icons.Walk, label: '总距离', value: `${summary.total_distance_km}`, unit: 'km', color: 'text-blue-600', bg: 'bg-blue-50' },
-        { icon: Icons.Clock, label: '总耗时', value: `${summary.total_time_min}`, unit: 'min', color: 'text-emerald-600', bg: 'bg-emerald-50' },
-        { icon: Icons.Wallet, label: '团购花费', value: `¥${summary.total_cost}`, unit: '', color: 'text-brand-600', bg: 'bg-brand-50' },
+        { icon: Icons.Walk, label: '总距离', value: `${summary.total_distance_km}`, unit: 'km', color: 'text-mt-city-green', bg: 'bg-mt-city-green-light', border: 'border-emerald-200' },
+        { icon: Icons.Clock, label: '总耗时', value: `${summary.total_time_min}`, unit: 'min', color: 'text-ink-700', bg: 'bg-ink-50', border: 'border-ink-200' },
+        { icon: Icons.Wallet, label: '团购花费', value: `¥${summary.total_cost}`, unit: '', color: 'text-mt-deal-red', bg: 'bg-mt-deal-red-light', border: 'border-red-200' },
       ];
 
       return (
         <div className="animate-fade-in-up">
-          <div className="flex items-center gap-2 mb-4 text-sm">
-            <span className="inline-flex items-center gap-1.5 font-medium text-warm-text"><span className="w-2 h-2 rounded-full bg-green-500"/>{summary.origin.name}</span>
-            <svg className="w-5 h-5 text-warm-muted flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-            <span className="inline-flex items-center gap-1.5 font-medium text-warm-text"><span className="w-2 h-2 rounded-full bg-red-500"/>{summary.destination.name}</span>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 text-sm flex-1">
+              <span className="inline-flex items-center gap-1.5 font-medium text-ink-800">
+                <span className="w-2.5 h-2.5 rounded-full bg-mt-city-green" style={{boxShadow:'0 0 6px rgba(16,185,129,0.3)'}}/>
+                {summary.origin.name}
+              </span>
+              <span className="text-ink-300">→</span>
+              <span className="inline-flex items-center gap-1.5 font-medium text-ink-800">
+                <span className="w-2.5 h-2.5 rounded-full bg-mt-deal-red" style={{boxShadow:'0 0 6px rgba(255,77,61,0.3)'}}/>
+                {summary.destination.name}
+              </span>
+            </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            {stats.map(({ icon: Icon, label, value, unit, color, bg }, i) => (
-              <div key={label} className={`${bg} rounded-xl p-3 text-center animate-fade-in-up`} style={{animationDelay:`${(i+1)*50}ms`}}>
-                <Icon className={`w-5 h-5 mx-auto mb-1.5 ${color}`}/>
-                <div className="flex items-baseline justify-center gap-0.5"><span className={`text-lg font-bold ${color}`}>{value}</span>{unit && <span className={`text-xs ${color} opacity-70`}>{unit}</span>}</div>
-                <div className="text-xs text-warm-muted mt-0.5">{label}</div>
+          <div className="grid grid-cols-3 gap-2.5">
+            {stats.map(({ icon: Icon, label, value, unit, color, bg, border }, i) => (
+              <div key={label} className={`${bg} border ${border} rounded-xl p-3 text-center animate-fade-in-up`} style={{animationDelay:`${(i+1)*60}ms`}}>
+                <Icon className={`w-4 h-4 mx-auto mb-1.5 ${color}`}/>
+                <div className="flex items-baseline justify-center gap-0.5">
+                  <span className={`text-lg font-bold ${color} font-mono`}>{value}</span>
+                  {unit && <span className={`text-[11px] ${color} opacity-60`}>{unit}</span>}
+                </div>
+                <div className="text-[11px] text-ink-400 mt-0.5">{label}</div>
               </div>
             ))}
           </div>
-          <div className="mt-4 flex items-start gap-2 bg-gradient-to-r from-brand-50 to-amber-50 border border-brand-100 rounded-xl p-3.5">
-            <Icons.Sparkle className="w-4 h-4 text-brand-500 flex-shrink-0 mt-0.5"/>
-            <p className="text-sm text-brand-800 leading-relaxed">{summary.recommend_reason}</p>
+          <div className="mt-3 flex items-start gap-2.5 bg-mt-yellow/10 border border-mt-yellow/30 rounded-xl p-3.5">
+            <div className="w-6 h-6 rounded-lg bg-mt-yellow/20 flex items-center justify-center flex-shrink-0">
+              <Icons.Sparkle className="w-3.5 h-3.5 text-mt-yellow-dark"/>
+            </div>
+            <p className="text-sm text-ink-700 leading-relaxed">{summary.recommend_reason}</p>
           </div>
         </div>
       );
     }
 
-    // ─── DEAL CARD ──────────────────────────────────────────────────
+    // ─── DEAL CARD (ticket voucher style) ──────────────────────────
     function DealCard({ deal, index = 0 }) {
       const discount = deal.original_price ? Math.round((1 - deal.price / deal.original_price) * 100) : 0;
       return (
-        <div className="bg-white rounded-xl border border-warm-border card-hover-lift p-4 cursor-pointer animate-fade-in-up" style={{animationDelay:`${index*80}ms`}}>
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-semibold text-warm-text truncate leading-snug">{deal.deal_title}</h4>
-              <span className="inline-flex items-center gap-1 mt-1 text-xs text-warm-muted"><Icons.Tag className="w-3 h-3"/>{deal.category}</span>
-            </div>
-            <div className="text-right flex-shrink-0">
-              <div className="flex items-baseline gap-0.5"><span className="text-xs text-brand-600 font-medium">¥</span><span className="text-xl font-bold text-brand-600 leading-none">{deal.price}</span></div>
-              {deal.original_price && (
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-xs text-warm-muted line-through">¥{deal.original_price}</span>
-                  <span className="text-[10px] font-bold text-white bg-brand-500 px-1.5 py-0.5 rounded">省{discount}%</span>
+        <div className="deal-ticket animate-ticket-print" style={{animationDelay:`${index*100}ms`}}>
+          <div className="deal-ticket-inner border border-mt-street rounded-xl p-0 flex">
+            {/* Left: deal info */}
+            <div className="flex-1 p-3.5 pr-4 min-w-0">
+              <h4 className="text-[13px] font-semibold text-ink-800 leading-snug mb-1.5">{deal.deal_title}</h4>
+              <div className="flex items-center gap-2 text-[11px] text-ink-400 mb-2">
+                <span className="inline-flex items-center gap-1"><Icons.Tag className="w-3 h-3"/>{deal.category}</span>
+                {deal.rating && <span className="inline-flex items-center gap-0.5"><Icons.Star className="w-3 h-3 text-amber-400"/>{deal.rating}</span>}
+              </div>
+              {deal.included_items?.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {deal.included_items.map((item, i) => (
+                    <span key={i} className="text-[11px] text-ink-600 bg-mt-rice border border-mt-street px-1.5 py-0.5 rounded">
+                      {item}
+                    </span>
+                  ))}
                 </div>
+              )}
+              <div className="flex items-center gap-2.5 text-[11px] text-ink-400">
+                {deal.monthly_sales && <span>月售{deal.monthly_sales > 1000 ? `${(deal.monthly_sales/1000).toFixed(1)}k` : deal.monthly_sales}</span>}
+                {deal.business_time && <span>{deal.business_time}</span>}
+              </div>
+            </div>
+            {/* Right: price */}
+            <div className="w-[100px] flex-shrink-0 flex flex-col items-center justify-center py-3 px-2" style={{background:'linear-gradient(135deg, #FFF0EF 0%, #FFF8E6 100%)'}}>
+              <div className="flex items-baseline gap-0.5">
+                <span className="text-[11px] text-mt-deal-red font-medium">¥</span>
+                <span className="text-2xl font-bold text-mt-deal-red leading-none font-mono">{deal.price}</span>
+              </div>
+              {deal.original_price && (
+                <>
+                  <span className="text-[11px] text-ink-400 line-through mt-0.5">¥{deal.original_price}</span>
+                  <span className="mt-1.5 text-[10px] font-bold text-white bg-mt-deal-red px-2 py-0.5 rounded" style={{boxShadow:'0 1px 4px rgba(255,77,61,0.3)'}}>省{discount}%</span>
+                </>
               )}
             </div>
           </div>
-          {deal.included_items?.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {deal.included_items.map((item, i) => (
-                <span key={i} className="inline-flex items-center gap-1 text-xs text-warm-text bg-warm-bg border border-warm-border px-2 py-0.5 rounded-md">
-                  <span className="text-brand-500">·</span>{item}
-                </span>
-              ))}
-            </div>
-          )}
-          <div className="flex items-center gap-3 text-xs text-warm-muted pt-2.5 border-t border-warm-border/60">
-            {deal.rating && <span className="inline-flex items-center gap-0.5"><Icons.Star className="w-3.5 h-3.5 text-amber-400"/>{deal.rating}</span>}
-            {deal.monthly_sales && <span className="inline-flex items-center gap-0.5"><Icons.Users className="w-3.5 h-3.5"/>月售{deal.monthly_sales > 1000 ? `${(deal.monthly_sales/1000).toFixed(1)}k` : deal.monthly_sales}</span>}
-            {deal.business_time && <span className="inline-flex items-center gap-0.5"><Icons.Clock className="w-3.5 h-3.5"/>{deal.business_time}</span>}
-          </div>
           {deal.reviews?.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2.5">
+            <div className="flex flex-wrap gap-1.5 px-3.5 pb-3 pt-1">
               {deal.reviews.slice(0, 3).map((review, i) => (
-                <span key={i} className="text-[11px] text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">"{review}"</span>
+                <span key={i} className="text-[11px] text-ink-600 bg-mt-street/50 px-2 py-0.5 rounded-full">"{review}"</span>
               ))}
             </div>
           )}
@@ -699,13 +901,13 @@
       );
     }
 
-    // ─── POI CARD ───────────────────────────────────────────────────
+    // ─── POI CARD (store + ticket hybrid) ──────────────────────────
     const TYPE_COLORS = {
-      '咖啡': { bg:'bg-amber-50', text:'text-amber-700', border:'border-amber-200' },
-      '日料': { bg:'bg-red-50', text:'text-red-700', border:'border-red-200' },
-      '茶饮': { bg:'bg-green-50', text:'text-green-700', border:'border-green-200' },
-      '甜品': { bg:'bg-pink-50', text:'text-pink-700', border:'border-pink-200' },
-      default: { bg:'bg-gray-50', text:'text-gray-700', border:'border-gray-200' },
+      '咖啡': { bg:'bg-amber-50', text:'text-amber-700', border:'border-amber-200', accent:'#D97706' },
+      '日料': { bg:'bg-red-50', text:'text-red-700', border:'border-red-200', accent:'#DC2626' },
+      '茶饮': { bg:'bg-emerald-50', text:'text-emerald-700', border:'border-emerald-200', accent:'#059669' },
+      '甜品': { bg:'bg-pink-50', text:'text-pink-700', border:'border-pink-200', accent:'#DB2777' },
+      default: { bg:'bg-gray-50', text:'text-gray-700', border:'border-gray-200', accent:'#6B7280' },
     };
 
     function POICard({ poi, index = 0 }) {
@@ -716,56 +918,74 @@
       const totalSavings = poi.deals?.reduce((sum, d) => sum + ((d.original_price || d.price) - d.price), 0) || 0;
 
       useEffect(() => {
-        if (contentRef.current) {
-          setContentHeight(contentRef.current.scrollHeight);
-        }
+        if (contentRef.current) setContentHeight(contentRef.current.scrollHeight);
       }, [expanded, poi.deals]);
 
       return (
         <div className="animate-fade-in-up" style={{animationDelay:`${index*120}ms`}}>
           <div className="relative">
-            {index > 0 && <div className="absolute left-5 -top-6 w-0.5 h-6 bg-gradient-to-b from-warm-border to-brand-300"/>}
-            <div className="bg-white rounded-2xl border border-warm-border shadow-card card-hover-lift overflow-hidden">
+            {index > 0 && (
+              <div className="absolute left-6 -top-5 flex flex-col items-center gap-0.5">
+                <div className="w-0.5 h-3 bg-mt-street"/>
+                <div className="w-1.5 h-1.5 rounded-full bg-mt-yellow"/>
+                <div className="w-0.5 h-2 bg-mt-street"/>
+              </div>
+            )}
+            <div className="bg-white rounded-2xl border border-mt-street shadow-card card-hover-lift overflow-hidden">
               {/* header */}
               <div className="p-4 pb-3">
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold text-sm shadow-sm" style={{animation:'softFloat 4s ease-in-out infinite', animationDelay:`${index*0.5}s`}}>{index+1}</div>
+                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-mt-yellow flex items-center justify-center text-ink-900 font-bold text-sm" style={{boxShadow:'0 2px 8px rgba(255,209,0,0.25)', animation:'softFloat 4s ease-in-out infinite', animationDelay:`${index*0.5}s`}}>
+                    {index+1}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-base font-semibold text-warm-text truncate">{poi.name}</h3>
-                      <span className={`flex-shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full ${tc.bg} ${tc.text} ${tc.border} border`}>{poi.type}</span>
+                      <h3 className="text-base font-semibold text-ink-900 truncate">{poi.name}</h3>
+                      <span className={`flex-shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-md ${tc.bg} ${tc.text} ${tc.border} border`}>{poi.type}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-warm-muted mb-2">
+                    <div className="flex items-center gap-3 text-xs text-ink-400 mb-2">
                       <span className="inline-flex items-center gap-0.5"><Icons.MapPin className="w-3.5 h-3.5"/>{poi.address}</span>
                       {poi.rating && <span className="inline-flex items-center gap-0.5"><Icons.Star className="w-3.5 h-3.5 text-amber-400"/>{poi.rating}</span>}
                     </div>
-                    <div className="flex items-start gap-1.5 bg-brand-50/60 border border-brand-100 rounded-lg px-2.5 py-1.5">
-                      <Icons.Sparkle className="w-3.5 h-3.5 text-brand-500 flex-shrink-0 mt-0.5"/>
-                      <p className="text-xs text-brand-700 leading-relaxed">{poi.recommend_reason}</p>
+                    <div className="flex items-start gap-2 bg-mt-rice border border-mt-street rounded-lg px-2.5 py-2">
+                      <Icons.Sparkle className="w-3.5 h-3.5 text-mt-yellow-dark flex-shrink-0 mt-0.5"/>
+                      <p className="text-xs text-ink-600 leading-relaxed">{poi.recommend_reason}</p>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center justify-between mt-3 pl-[52px]">
-                  <div className="flex items-center gap-3 text-xs text-warm-muted">
-                    {poi.detour_meters != null && <span className="inline-flex items-center gap-1 bg-green-50 text-green-700 px-2 py-0.5 rounded-md">绕路 {poi.detour_meters}m</span>}
-                    {poi.detour_time_min != null && <span className="inline-flex items-center gap-1"><Icons.Clock className="w-3 h-3"/>+{poi.detour_time_min}min</span>}
+                  <div className="flex items-center gap-2 text-xs">
+                    {poi.detour_meters != null && (
+                      <span className="inline-flex items-center gap-1 bg-mt-city-green-light text-mt-city-green px-2 py-0.5 rounded-md font-medium border border-emerald-200">
+                        绕路 {poi.detour_meters}m
+                      </span>
+                    )}
+                    {poi.detour_time_min != null && (
+                      <span className="inline-flex items-center gap-1 text-ink-400">
+                        <Icons.Clock className="w-3 h-3"/>+{poi.detour_time_min}min
+                      </span>
+                    )}
                   </div>
-                  {totalSavings > 0 && <span className="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md">最高省 ¥{totalSavings.toFixed(0)}</span>}
+                  {totalSavings > 0 && (
+                    <span className="text-xs font-semibold text-mt-deal-red bg-mt-deal-red-light px-2.5 py-0.5 rounded-md border border-red-200">
+                      最高省 ¥{totalSavings.toFixed(0)}
+                    </span>
+                  )}
                 </div>
               </div>
-              {/* deals */}
+              {/* deals toggle */}
               {poi.deals?.length > 0 && (
-                <div className="border-t border-warm-border/60">
-                  <button onClick={() => setExpanded(!expanded)} className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-warm-text hover:bg-warm-bg/50 transition-colors cursor-pointer btn-press">
+                <div className="border-t border-mt-street/60">
+                  <button onClick={() => setExpanded(!expanded)} className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-ink-700 hover:bg-mt-rice/50 transition-colors cursor-pointer btn-press">
                     <span className="flex items-center gap-2">
-                      <span className="text-brand-500"><Icons.Ticket className="w-4 h-4"/></span>
+                      <span className="text-mt-yellow-dark"><Icons.Ticket className="w-4 h-4"/></span>
                       {poi.deals.length} 个团购可用
-                      <span className="text-xs text-warm-muted">· 最低 ¥{Math.min(...poi.deals.map(d => d.price))}</span>
+                      <span className="text-xs text-ink-400">· 最低 ¥{Math.min(...poi.deals.map(d => d.price))}</span>
                     </span>
-                    <Icons.ChevronRight className={`w-4 h-4 text-warm-muted transition-transform duration-300 ${expanded ? 'rotate-90' : ''}`}/>
+                    <Icons.ChevronRight className={`w-4 h-4 text-ink-400 transition-transform duration-300 ${expanded ? 'rotate-90' : ''}`}/>
                   </button>
-                  <div style={{ maxHeight: expanded ? contentHeight + 'px' : '0px', opacity: expanded ? 1 : 0, overflow: 'hidden', transition: 'max-height 0.4s ease, opacity 0.3s ease' }}>
-                    <div ref={contentRef} className="px-4 pb-4 space-y-2.5">
+                  <div style={{ maxHeight: expanded ? contentHeight + 'px' : '0px', opacity: expanded ? 1 : 0, overflow: 'hidden', transition: 'max-height 0.4s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease' }}>
+                    <div ref={contentRef} className="px-4 pb-4 space-y-3">
                       {poi.deals.map((deal, di) => <DealCard key={deal.deal_id} deal={deal} index={di}/>)}
                     </div>
                   </div>
@@ -777,12 +997,12 @@
       );
     }
 
-    // ─── LOADING OVERLAY ────────────────────────────────────────────
+    // ─── LOADING OVERLAY (route building + ticket printing) ────────
     const LOADING_STEPS = [
-      { text: '正在分析你的需求...', sub: '理解起点终点和偏好' },
-      { text: '搜索沿途好店...', sub: '寻找最佳 POI 和团购' },
-      { text: '规划最优路线...', sub: '计算绕路距离和时间' },
-      { text: '生成专属推荐...', sub: '即将为你呈现结果' },
+      { text: '分析你的出行需求...', sub: '理解起点终点和偏好', icon: '🔍' },
+      { text: '扫过沿途好店...', sub: '寻找最佳 POI 和团购', icon: '🏪' },
+      { text: '核算绕路时间...', sub: '规划最优步行路线', icon: '🗺️' },
+      { text: '匹配可用团购券...', sub: '即将为你出票', icon: '🎫' },
     ];
 
     function LoadingOverlay() {
@@ -797,7 +1017,6 @@
         return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
       }, []);
 
-      // Loading route-building canvas animation
       useEffect(() => {
         if (prefersReducedMotion) return;
         const canvas = canvasRef.current;
@@ -807,21 +1026,16 @@
         canvas.width = w; canvas.height = h;
 
         const nodes = [
-          { x: 60, y: 220, r: 8, color: '#22C55E', label: '起点' },
-          { x: 110, y: 160, r: 6, color: '#F97316', label: '' },
-          { x: 170, y: 100, r: 6, color: '#F97316', label: '' },
-          { x: 220, y: 180, r: 6, color: '#F97316', label: '' },
-          { x: 200, y: 60, r: 8, color: '#EF4444', label: '终点' },
+          { x: 60, y: 220, r: 9, color: '#10B981', label: '起点' },
+          { x: 110, y: 160, r: 6, color: '#FFD100', label: '' },
+          { x: 170, y: 100, r: 6, color: '#FFD100', label: '' },
+          { x: 220, y: 180, r: 6, color: '#FFD100', label: '' },
+          { x: 200, y: 60, r: 9, color: '#FF4D3D', label: '终点' },
         ];
 
-        // particles that flow along the route
         const particles = [];
         for (let i = 0; i < 12; i++) {
-          particles.push({
-            t: Math.random() * 4,
-            speed: 0.008 + Math.random() * 0.006,
-            alpha: 0.3 + Math.random() * 0.5,
-          });
+          particles.push({ t: Math.random() * 4, speed: 0.008 + Math.random() * 0.006, alpha: 0.3 + Math.random() * 0.5 });
         }
 
         let frame = 0;
@@ -829,103 +1043,59 @@
           ctx.clearRect(0, 0, w, h);
           frame++;
 
-          // draw connections (appear progressively)
           const progress = Math.min(1, frame / 120);
           const visibleSegments = Math.floor(progress * (nodes.length - 1));
 
           for (let i = 0; i < visibleSegments && i < nodes.length - 1; i++) {
             const a = nodes[i], b = nodes[i + 1];
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
-            ctx.strokeStyle = 'rgba(249,115,22,0.3)';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // connecting glow
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
-            ctx.strokeStyle = 'rgba(249,115,22,0.08)';
-            ctx.lineWidth = 8;
-            ctx.lineCap = 'round';
-            ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+            ctx.strokeStyle = 'rgba(255,209,0,0.25)'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+            ctx.strokeStyle = 'rgba(255,209,0,0.06)'; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.stroke();
           }
 
-          // draw the "building" segment (partial)
           if (visibleSegments < nodes.length - 1 && frame > 20) {
             const idx = visibleSegments;
             const a = nodes[idx], b = nodes[idx + 1];
             const segProgress = Math.min(1, (progress * (nodes.length - 1)) - idx);
-            const mx = a.x + (b.x - a.x) * segProgress;
-            const my = a.y + (b.y - a.y) * segProgress;
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(mx, my);
-            ctx.strokeStyle = 'rgba(249,115,22,0.5)';
-            ctx.lineWidth = 2.5;
-            ctx.lineCap = 'round';
-            ctx.stroke();
-            // building tip glow
-            ctx.beginPath();
-            ctx.arc(mx, my, 4, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(249,115,22,0.6)';
-            ctx.fill();
+            const mx = a.x + (b.x - a.x) * segProgress, my = a.y + (b.y - a.y) * segProgress;
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(mx, my);
+            ctx.strokeStyle = 'rgba(255,209,0,0.6)'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.stroke();
+            ctx.beginPath(); ctx.arc(mx, my, 5, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,209,0,0.7)'; ctx.fill();
           }
 
-          // draw nodes
           for (let i = 0; i < nodes.length; i++) {
             const n = nodes[i];
             const nodeProgress = progress * (nodes.length - 1);
             if (i > nodeProgress + 0.5) continue;
-
-            // pulse ring
             const pulseR = n.r + 4 + Math.sin(frame * 0.04 + i) * 3;
-            ctx.beginPath();
-            ctx.arc(n.x, n.y, pulseR, 0, Math.PI * 2);
-            ctx.fillStyle = n.color + '18';
-            ctx.fill();
-
-            // node
-            ctx.beginPath();
-            ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-            ctx.fillStyle = n.color;
-            ctx.fill();
-
-            // inner dot
+            ctx.beginPath(); ctx.arc(n.x, n.y, pulseR, 0, Math.PI * 2);
+            ctx.fillStyle = n.color + '15'; ctx.fill();
+            ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+            ctx.fillStyle = n.color; ctx.fill();
             if (n.r > 6) {
-              ctx.beginPath();
-              ctx.arc(n.x, n.y, n.r - 3, 0, Math.PI * 2);
-              ctx.fillStyle = 'white';
-              ctx.fill();
+              ctx.beginPath(); ctx.arc(n.x, n.y, n.r - 3.5, 0, Math.PI * 2);
+              ctx.fillStyle = 'white'; ctx.fill();
             }
-
-            // label
             if (n.label) {
-              ctx.font = '10px Inter, sans-serif';
-              ctx.fillStyle = '#6B6B68';
-              ctx.textAlign = 'center';
-              ctx.fillText(n.label, n.x, n.y + n.r + 14);
+              ctx.font = '600 10px Noto Sans SC, sans-serif';
+              ctx.fillStyle = '#6B6155'; ctx.textAlign = 'center';
+              ctx.fillText(n.label, n.x, n.y + n.r + 15);
             }
           }
 
-          // flowing particles along visible route
           if (visibleSegments > 0) {
             for (const p of particles) {
               p.t += p.speed;
               if (p.t > visibleSegments) p.t = 0;
-
               const segIdx = Math.floor(p.t);
               if (segIdx >= nodes.length - 1) continue;
               const a = nodes[segIdx], b = nodes[segIdx + 1];
               const frac = p.t - segIdx;
-              const px = a.x + (b.x - a.x) * frac;
-              const py = a.y + (b.y - a.y) * frac;
-
-              ctx.beginPath();
-              ctx.arc(px, py, 2.5, 0, Math.PI * 2);
-              ctx.fillStyle = `rgba(249,115,22,${p.alpha})`;
-              ctx.fill();
+              const px = a.x + (b.x - a.x) * frac, py = a.y + (b.y - a.y) * frac;
+              ctx.beginPath(); ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+              ctx.fillStyle = `rgba(255,209,0,${p.alpha})`; ctx.fill();
             }
           }
 
@@ -937,47 +1107,52 @@
       }, []);
 
       return (
-        <div className="fixed inset-0 z-[100] bg-warm-bg/95 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] bg-mt-rice/95 backdrop-blur-md flex items-center justify-center p-4">
           <div className="w-full max-w-sm text-center">
-            {/* Route-building animation */}
             <div className="relative w-[280px] h-[280px] mx-auto mb-6">
               <canvas ref={canvasRef} className="w-full h-full" style={{ borderRadius: '50%' }}/>
               {!prefersReducedMotion && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{animation:'float 3s ease-in-out infinite'}}>
-                  <div className="w-12 h-12 rounded-full bg-brand-500/10 flex items-center justify-center" style={{animation:'glowPulse 2s ease-in-out infinite'}}>
-                    <Icons.Navigation className="w-6 h-6 text-brand-500"/>
+                  <div className="w-14 h-14 rounded-full bg-mt-yellow/15 flex items-center justify-center border-2 border-mt-yellow/30" style={{animation:'glowPulse 2s ease-in-out infinite'}}>
+                    <Icons.Navigation className="w-6 h-6 text-mt-yellow-dark"/>
                   </div>
                 </div>
               )}
             </div>
-            <div className="space-y-3 mb-6">
+            <div className="space-y-2.5 mb-6">
               {LOADING_STEPS.map((s, i) => (
-                <div key={i} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-500 ${i===step?'bg-brand-50 border border-brand-200 opacity-100':i<step?'opacity-50':'opacity-30'}`}>
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${i<step?'bg-brand-500 text-white':i===step?'bg-brand-500 text-white':'bg-warm-border text-warm-muted'}`} style={i===step?{animation:'pulseDot 2s ease-in-out infinite'}:{}}>
-                    {i<step?'✓':i+1}
+                <div key={i} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-500 ${i===step?'bg-mt-yellow/10 border border-mt-yellow/40 shadow-sm':i<step?'opacity-50':'opacity-30'}`} style={i===step?{animation:'slideInRight 0.3s ease'}:{}}>
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-sm ${i<step?'bg-mt-yellow text-ink-900':i===step?'bg-mt-yellow text-ink-900':'bg-mt-street text-ink-400'}`} style={i===step?{animation:'pulseDot 2s ease-in-out infinite'}:{}}>
+                    {i<step ? <Icons.Check className="w-4 h-4"/> : s.icon}
                   </div>
                   <div className="text-left">
-                    <div className="text-sm font-medium text-warm-text">{s.text}</div>
-                    <div className="text-xs text-warm-muted">{s.sub}</div>
+                    <div className="text-sm font-medium text-ink-800">{s.text}</div>
+                    <div className="text-[11px] text-ink-400">{s.sub}</div>
                   </div>
                 </div>
               ))}
             </div>
-            <p className="text-xs text-warm-muted">AI 正在为你量身定制路线...</p>
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-mt-yellow" style={{animation:'pulseDot 1s ease-in-out infinite'}}/>
+              <div className="w-1.5 h-1.5 rounded-full bg-mt-yellow" style={{animation:'pulseDot 1s ease-in-out 0.3s infinite'}}/>
+              <div className="w-1.5 h-1.5 rounded-full bg-mt-yellow" style={{animation:'pulseDot 1s ease-in-out 0.6s infinite'}}/>
+            </div>
           </div>
         </div>
       );
     }
 
-    // ─── ERROR MESSAGE ──────────────────────────────────────────────
+    // ─── ERROR MESSAGE ─────────────────────────────────────────────
     function ErrorMessage({ message, onRetry }) {
       return (
-        <div className="fixed inset-0 z-[100] bg-warm-bg/95 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] bg-mt-rice/95 backdrop-blur-md flex items-center justify-center p-4">
           <div className="w-full max-w-sm bg-white rounded-2xl shadow-float border border-red-100 p-6 text-center">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-red-50 flex items-center justify-center"><Icons.AlertCircle className="w-7 h-7 text-red-500"/></div>
-            <h3 className="text-lg font-semibold text-warm-text mb-2">出了一点小问题</h3>
-            <p className="text-sm text-warm-muted mb-6 leading-relaxed">{message}</p>
-            <button onClick={onRetry} className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-medium rounded-xl transition-colors shadow-sm cursor-pointer btn-press">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-mt-deal-red-light flex items-center justify-center border border-red-200">
+              <Icons.AlertCircle className="w-7 h-7 text-mt-deal-red"/>
+            </div>
+            <h3 className="text-lg font-semibold text-ink-900 mb-2">出了一点小问题</h3>
+            <p className="text-sm text-ink-500 mb-6 leading-relaxed">{message}</p>
+            <button onClick={onRetry} className="inline-flex items-center gap-2 px-5 py-2.5 bg-mt-yellow hover:bg-mt-yellow-dark text-ink-900 font-semibold rounded-xl transition-colors shadow-sm cursor-pointer btn-press">
               <Icons.Refresh className="w-4 h-4"/>重试
             </button>
           </div>
@@ -985,160 +1160,259 @@
       );
     }
 
-    // ─── HOME PAGE ──────────────────────────────────────────────────
+    // ─── HOME PAGE ─────────────────────────────────────────────────
     function HomePage({ onSearch, loading }) {
       const [query, setQuery] = useState('');
       const [preferences, setPreferences] = useState({
         prefer_less_detour: true, prefer_low_price: true,
         prefer_high_rating: false, prefer_high_sales: false, prefer_fast_arrival: false,
       });
-      const [currentLocation, setCurrentLocation] = useState(null);
       const inputRef = useRef(null);
       const [mounted, setMounted] = useState(false);
       const [inputFocused, setInputFocused] = useState(false);
 
-      useEffect(() => {
-        setMounted(true);
-        inputRef.current?.focus();
-        getCurrentLocation().then(setCurrentLocation);
-      }, []);
+      useEffect(() => { setMounted(true); }, []);
 
       const handleSubmit = (e) => {
         e.preventDefault();
         if (!query.trim() || loading) return;
-        onSearch(query.trim(), preferences, currentLocation);
+        onSearch(query.trim(), preferences);
       };
 
       return (
         <div className="min-h-[calc(100dvh-56px)] flex flex-col">
-          <div className="flex-1 flex flex-col items-center justify-center px-4 pb-12">
-            {/* Hero */}
-            <div className={`text-center mb-8 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-              <div className="inline-flex items-center gap-2 mb-4 px-4 py-1.5 bg-brand-50 border border-brand-100 rounded-full">
-                <Icons.Sparkle className="w-4 h-4 text-brand-500"/><span className="text-sm font-medium text-brand-700">AI 智能路线规划</span>
+          <div className="flex-1 flex flex-col items-center justify-start px-4 pt-4 sm:pt-8 pb-8">
+            {/* Hero section */}
+            <div className={`text-center mb-6 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+              <div className="hero-pattern -mx-4 px-4 py-5 sm:py-8 mb-4 sm:mb-6 rounded-2xl">
+                {/* Data capsules */}
+                <div className="flex items-center justify-center gap-2 mb-5 flex-wrap">
+                  <div className="data-capsule inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/80 border border-mt-street rounded-full text-xs text-ink-600 shadow-sm" style={{animationDelay:'100ms'}}>
+                    <span className="text-sm">🍜</span>饭点热度
+                    <span className="font-semibold text-mt-deal-red">高</span>
+                  </div>
+                  <div className="data-capsule inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/80 border border-mt-street rounded-full text-xs text-ink-600 shadow-sm" style={{animationDelay:'200ms'}}>
+                    <span className="text-sm">🎯</span>绕路
+                    <span className="font-semibold text-mt-city-green">&lt;3min</span>
+                  </div>
+                  <div className="data-capsule inline-flex items-center gap-1.5 px-3 py-1.5 bg-mt-yellow/10 border border-mt-yellow/30 rounded-full text-xs text-ink-700 shadow-sm" style={{animationDelay:'300ms'}}>
+                    <span className="text-sm">🎫</span>今日可省
+                    <span className="font-semibold text-mt-deal-red">¥42</span>
+                  </div>
+                </div>
+
+                <h2 className="text-2xl sm:text-3xl font-display font-bold text-ink-900 mb-3 leading-tight">
+                  这一路<br/>
+                  <span className="text-mt-yellow-dark">顺手把好店带上</span>
+                </h2>
+                <p className="text-ink-500 text-sm max-w-sm mx-auto leading-relaxed">
+                  输入行程，AI 扫过沿途好店和团购<br/>
+                  让每一步都不白走
+                </p>
               </div>
-              <h2 className="text-3xl sm:text-4xl font-display font-bold text-warm-text mb-3 leading-tight">
-                说出你的行程<br/>
-                <span className="bg-gradient-to-r from-brand-500 to-amber-500 bg-clip-text text-transparent">AI 帮你找到顺路好店</span>
-              </h2>
-              <p className="text-warm-muted text-base max-w-md mx-auto leading-relaxed">输入出发地和目的地，AI 自动推荐途中的优质团购，让每一步都不白走</p>
             </div>
 
-            {/* Search */}
+            {/* Search (route ticket style) */}
             <form onSubmit={handleSubmit} className={`w-full max-w-lg transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0 delay-200' : 'opacity-0 translate-y-6'}`}>
-              <div className="relative group">
-                <div className={`absolute -inset-1 bg-gradient-to-r from-brand-400/20 via-brand-300/10 to-amber-400/20 rounded-2xl blur-lg transition-opacity duration-500 ${inputFocused ? 'opacity-100' : 'opacity-0'}`}/>
-                <div className={`relative bg-white rounded-2xl border-2 shadow-float transition-all duration-300 search-glow ${inputFocused ? 'border-brand-400 shadow-glow' : 'border-warm-border'}`}>
-                  <div className="flex items-center gap-3 px-4 py-3.5">
-                    <Icons.Navigation className={`w-5 h-5 flex-shrink-0 transition-colors duration-200 ${inputFocused ? 'text-brand-500' : 'text-warm-muted'}`}/>
+              <div className="relative">
+                <div className={`absolute -inset-1.5 rounded-2xl blur-xl transition-opacity duration-500 ${inputFocused ? 'opacity-100' : 'opacity-0'}`} style={{background:'linear-gradient(135deg, rgba(255,209,0,0.15), rgba(255,77,61,0.08))'}}/>
+                <div className={`relative bg-white rounded-2xl border-2 shadow-float transition-all duration-300 search-glow overflow-hidden ${inputFocused ? 'border-mt-yellow shadow-glow-yellow' : 'border-mt-street'}`}>
+                  {/* Route ticket header */}
+                  <div className="flex items-center gap-2 px-4 pt-3 pb-2">
+                    <div className="w-2 h-2 rounded-full bg-mt-city-green" style={{boxShadow:'0 0 6px rgba(16,185,129,0.3)'}}/>
+                    <span className="text-[11px] text-ink-400 font-medium">出发地 → 目的地 + 需求</span>
+                    <div className="flex-1"/>
+                    <div className="w-2 h-2 rounded-full bg-mt-deal-red" style={{boxShadow:'0 0 6px rgba(255,77,61,0.3)'}}/>
+                  </div>
+                  <div className="h-px bg-mt-street/60 mx-3"/>
+                  {/* Input area */}
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <Icons.Navigation className={`w-5 h-5 flex-shrink-0 transition-colors duration-200 ${inputFocused ? 'text-mt-yellow-dark' : 'text-ink-300'}`}/>
                     <input ref={inputRef} type="text" value={query} onChange={e => setQuery(e.target.value)}
                       onFocus={() => setInputFocused(true)} onBlur={() => setInputFocused(false)}
                       placeholder="从武大去光谷，顺路找点吃的..."
-                      className="flex-1 bg-transparent text-base text-warm-text placeholder:text-warm-muted/60 outline-none"
+                      className="flex-1 bg-transparent text-[15px] text-ink-900 placeholder:text-ink-300 outline-none"
                       disabled={loading} aria-label="输入你的行程需求"/>
                     <button type="submit" disabled={!query.trim() || loading}
-                      className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 shadow-sm cursor-pointer btn-press ${!query.trim() || loading ? 'bg-warm-border text-warm-muted cursor-not-allowed' : 'bg-brand-500 hover:bg-brand-600 text-white'}`}
+                      className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 shadow-sm cursor-pointer btn-press ${!query.trim() || loading ? 'bg-mt-street text-ink-400 cursor-not-allowed' : 'bg-mt-yellow hover:bg-mt-yellow-dark text-ink-900'}`}
                       aria-label="搜索">
                       <Icons.Search className="w-4 h-4"/>
                     </button>
                   </div>
                 </div>
               </div>
-              <div className="mt-5">
-                <p className="text-xs text-warm-muted mb-2.5 font-medium">偏好设置</p>
+              <div className="mt-4">
+                <p className="text-xs text-ink-400 mb-2 font-medium">偏好设置</p>
                 <PreferenceTags preferences={preferences} onChange={setPreferences}/>
               </div>
             </form>
 
-            {/* Examples */}
-            <div className={`mt-8 w-full max-w-lg transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{transitionDelay:'400ms'}}>
-              <p className="text-xs text-warm-muted mb-2.5 font-medium">试试这些</p>
-              <div className="flex flex-wrap gap-2">
+            {/* Example queries (hot search / inspiration cards) */}
+            <div className={`mt-6 w-full max-w-lg transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{transitionDelay:'400ms'}}>
+              <div className="flex items-center gap-1.5 mb-3">
+                <Icons.Fire className="w-3.5 h-3.5 text-mt-deal-red"/>
+                <p className="text-xs text-ink-500 font-semibold">附近热搜</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {EXAMPLE_QUERIES.map((ex, i) => (
-                  <button key={i} onClick={() => { setQuery(ex); inputRef.current?.focus(); }}
-                    className="sheen-wrap text-sm text-warm-muted hover:text-brand-600 bg-white hover:bg-brand-50 border border-warm-border hover:border-brand-200 px-3.5 py-2 rounded-xl transition-all duration-200 cursor-pointer btn-press">
-                    {ex}
+                  <button key={i} onClick={() => { setQuery(ex.text); inputRef.current?.focus(); }}
+                    className="example-card flex items-center gap-3 bg-white border border-mt-street hover:border-mt-yellow/50 px-3.5 py-3 rounded-xl text-left shadow-card">
+                    <span className="text-xl flex-shrink-0">{ex.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] text-ink-800 font-medium truncate">{ex.text}</div>
+                      <span className="text-[11px] text-ink-400">{ex.tag}</span>
+                    </div>
+                    <Icons.ChevronRight className="w-4 h-4 text-ink-300 flex-shrink-0"/>
                   </button>
                 ))}
               </div>
             </div>
           </div>
-          <footer className="text-center py-4 text-xs text-warm-muted">美团黑客松 · Along-way Team</footer>
+          <footer className="text-center py-4 text-[11px] text-ink-400">美团黑客松 · Along-way Team</footer>
         </div>
       );
     }
 
-    // ─── RESULT PAGE ────────────────────────────────────────────────
+    // ─── RESULT PAGE ───────────────────────────────────────────────
     function ResultPage({ result, onBack }) {
       const [mounted, setMounted] = useState(false);
+      const [toastVisible, setToastVisible] = useState(false);
+      const [toastMsg, setToastMsg] = useState('');
       useEffect(() => { setMounted(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }, []);
       const { plan } = result;
       const { summary, route_overview, pois } = plan;
       const totalSaved = pois.reduce((sum, poi) => sum + poi.deals.reduce((s, d) => s + ((d.original_price || d.price) - d.price), 0), 0);
 
+      const handleShare = () => {
+        if (navigator.share) {
+          navigator.share({ title: '顺路购路线', text: `从${summary.origin.name}到${summary.destination.name}，推荐${pois.length}个好店` }).catch(() => {});
+        } else {
+          navigator.clipboard?.writeText(`从${summary.origin.name}到${summary.destination.name}，推荐${pois.length}个好店，预计省¥${totalSaved.toFixed(0)}`).then(() => {
+            setToastMsg('路线已复制到剪贴板');
+            setToastVisible(true);
+          }).catch(() => {
+            setToastMsg('分享功能暂不可用');
+            setToastVisible(true);
+          });
+        }
+      };
+
       return (
         <div className="min-h-[calc(100dvh-56px)] pb-8">
           <div className="max-w-2xl mx-auto px-4 pt-4 space-y-5">
+            {/* Map */}
             <section className={`transition-all duration-600 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
               <MapView waypoints={route_overview.waypoints} segments={route_overview.segments}/>
             </section>
+
+            {/* Summary (receipt style) */}
             <section className={`transition-all duration-600 ${mounted ? 'opacity-100 translate-y-0 delay-100' : 'opacity-0 translate-y-3'}`}>
-              <RouteSummary summary={summary}/>
+              <div className="bg-white rounded-2xl border border-mt-street shadow-card p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-4 rounded-full bg-mt-yellow"/>
+                  <h3 className="text-sm font-semibold text-ink-800">路线小票</h3>
+                </div>
+                <RouteSummary summary={summary}/>
+              </div>
             </section>
+
+            {/* Savings banner */}
             {totalSaved > 0 && (
-              <div className="bg-gradient-to-r from-brand-500 to-amber-500 rounded-2xl p-4 text-white flex items-center justify-between animate-fade-in-up" style={{animationDelay:'150ms'}}>
-                <div><div className="text-sm font-medium opacity-90">本次团购预计可省</div><div className="text-2xl font-bold mt-0.5">¥{totalSaved.toFixed(0)}</div></div>
-                <div className="text-right text-sm opacity-80"><div>{pois.length} 个推荐点</div><div>{pois.reduce((s, p) => s + p.deals.length, 0)} 个团购</div></div>
+              <div className="rounded-2xl p-4 text-white flex items-center justify-between animate-fade-in-up border overflow-hidden relative" style={{animationDelay:'150ms', background:'linear-gradient(135deg, #17140F 0%, #332D26 100%)', borderColor:'rgba(255,209,0,0.3)'}}>
+                <div className="absolute top-0 right-0 w-32 h-32 opacity-10" style={{background:'radial-gradient(circle, #FFD100, transparent 70%)'}}/>
+                <div className="relative">
+                  <div className="text-sm font-medium opacity-80">本次团购预计可省</div>
+                  <div className="flex items-baseline gap-1 mt-0.5">
+                    <span className="text-sm opacity-60">¥</span>
+                    <span className="text-3xl font-bold font-mono text-mt-yellow">{totalSaved.toFixed(0)}</span>
+                  </div>
+                </div>
+                <div className="relative text-right text-sm opacity-70">
+                  <div>{pois.length} 个推荐点</div>
+                  <div>{pois.reduce((s, p) => s + p.deals.length, 0)} 个团购</div>
+                </div>
               </div>
             )}
+
+            {/* POI list */}
             <section>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-semibold text-warm-text">途经推荐</h3>
-                <span className="text-xs text-warm-muted bg-warm-border/40 px-2.5 py-1 rounded-full">{pois.length} 个好店</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-4 rounded-full bg-mt-yellow"/>
+                  <h3 className="text-base font-semibold text-ink-900">途经推荐</h3>
+                </div>
+                <span className="text-xs text-ink-500 bg-mt-street/60 px-2.5 py-1 rounded-full font-medium">{pois.length} 个好店</span>
               </div>
               <div className="space-y-5">{pois.map((poi, i) => <POICard key={poi.poi_id} poi={poi} index={i}/>)}</div>
             </section>
+
+            {/* Route detail (timeline style) */}
             <section className="animate-fade-in-up" style={{animationDelay:'400ms'}}>
-              <h3 className="text-base font-semibold text-warm-text mb-3">路线详情</h3>
-              <div className="bg-white rounded-2xl border border-warm-border overflow-hidden divide-y divide-warm-border/60">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-1 h-4 rounded-full bg-mt-yellow"/>
+                <h3 className="text-base font-semibold text-ink-900">路线详情</h3>
+              </div>
+              <div className="bg-white rounded-2xl border border-mt-street overflow-hidden">
                 {route_overview.segments.map((seg, i) => {
                   const fromWp = route_overview.waypoints[seg.from], toWp = route_overview.waypoints[seg.to];
+                  const isFirst = i === 0;
+                  const isLast = i === route_overview.segments.length - 1;
                   return (
-                    <div key={i} className="flex items-center gap-3 px-4 py-3 text-sm card-hover-lift">
-                      <div className="w-6 h-6 rounded-full bg-warm-bg border border-warm-border flex items-center justify-center text-[10px] font-bold text-warm-muted flex-shrink-0">{i+1}</div>
-                      <div className="flex-1 min-w-0"><div className="text-warm-text font-medium truncate">{seg.instruction}</div><div className="text-xs text-warm-muted mt-0.5">{fromWp.name} → {toWp.name}</div></div>
-                      <div className="text-right text-xs text-warm-muted flex-shrink-0"><div>{(seg.distance_m/1000).toFixed(1)}km</div><div>{seg.time_min}min</div></div>
+                    <div key={i} className="flex items-stretch">
+                      {/* Timeline column */}
+                      <div className="flex flex-col items-center w-10 flex-shrink-0 pt-4">
+                        {isFirst && <div className="w-2.5 h-2.5 rounded-full bg-mt-city-green mb-1"/>}
+                        <div className="w-px flex-1 bg-mt-street"/>
+                        <div className="w-2 h-2 rounded-full bg-mt-yellow my-1"/>
+                        {isLast && <div className="w-px flex-1 bg-mt-street mb-1"/>}
+                        {isLast && <div className="w-2.5 h-2.5 rounded-full bg-mt-deal-red mt-1 mb-3"/>}
+                      </div>
+                      {/* Content */}
+                      <div className="flex-1 py-3 pr-4 min-w-0">
+                        <div className="text-sm font-medium text-ink-800">{seg.instruction}</div>
+                        <div className="flex items-center gap-3 text-xs text-ink-400 mt-1">
+                          <span>{fromWp.name} → {toWp.name}</span>
+                          <span className="text-ink-300">·</span>
+                          <span>{(seg.distance_m/1000).toFixed(1)}km</span>
+                          <span className="text-ink-300">·</span>
+                          <span>{seg.time_min}min</span>
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
               </div>
             </section>
+
+            {/* Action buttons */}
             <div className="flex gap-3 pt-2 pb-4">
-              <button onClick={onBack} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white hover:bg-warm-bg border border-warm-border text-warm-text font-medium rounded-xl transition-colors cursor-pointer btn-press">
+              <button onClick={onBack} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white hover:bg-mt-rice border border-mt-street text-ink-800 font-medium rounded-xl transition-colors cursor-pointer btn-press">
                 <Icons.ArrowLeft className="w-4 h-4"/>重新规划
               </button>
-              <button onClick={() => navigator.share?.({ title: '顺路购路线', text: `从${summary.origin.name}到${summary.destination.name}，推荐${pois.length}个好店` })}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-brand-500 hover:bg-brand-600 text-white font-medium rounded-xl transition-colors shadow-sm cursor-pointer btn-press">
+              <button onClick={handleShare}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-mt-yellow hover:bg-mt-yellow-dark text-ink-900 font-semibold rounded-xl transition-colors shadow-sm cursor-pointer btn-press">
                 <Icons.Share className="w-4 h-4"/>分享路线
               </button>
             </div>
-            <footer className="text-center text-xs text-warm-muted pb-2">美团黑客松 · Along-way Team</footer>
+            <footer className="text-center text-[11px] text-ink-400 pb-2">美团黑客松 · Along-way Team</footer>
           </div>
+
+          <Toast message={toastMsg} visible={toastVisible} onDone={() => setToastVisible(false)}/>
         </div>
       );
     }
 
-    // ─── APP ────────────────────────────────────────────────────────
+    // ─── APP ───────────────────────────────────────────────────────
     function App() {
       const [state, setState] = useState('idle');
       const [result, setResult] = useState(null);
       const [error, setError] = useState(null);
 
-      const handleSearch = useCallback(async (query, preferences, currentLocation) => {
+      const handleSearch = useCallback(async (query, preferences) => {
         setState('loading');
         setError(null);
         try {
-          const data = await submitPlan({ userQuery: query, travelMode: 'walking', preferences, currentLocation });
+          const data = await submitPlan({ userQuery: query, travelMode: 'walking', preferences });
           if (data.success) { setResult(data); setState('result'); }
           else { setError(data.message || '规划失败，请重试'); setState('error'); }
         } catch (err) { setError(err.message || '网络错误，请检查后重试'); setState('error'); }
@@ -1148,7 +1422,7 @@
       const handleRetry = useCallback(() => { setState('idle'); setError(null); }, []);
 
       return (
-        <div className="min-h-dvh bg-warm-bg relative">
+        <div className="min-h-dvh bg-mt-rice relative">
           <ParticleField intensity={state === 'idle' ? 1 : 0.3}/>
           <div className="relative z-10">
             <Header showBack={state === 'result'} onBack={handleBack}/>
@@ -1161,7 +1435,7 @@
       );
     }
 
-    // ─── MOUNT ──────────────────────────────────────────────────────
+    // ─── MOUNT ─────────────────────────────────────────────────────
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App/>);
   </script>
