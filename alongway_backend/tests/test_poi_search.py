@@ -185,7 +185,7 @@ def test_poi_search_falls_back_to_amap(monkeypatch, db_session: Session):
     assert persisted.name == result.pois[0].name
 
 
-def test_poi_search_generates_mock_when_amap_empty(monkeypatch, db_session: Session):
+def test_poi_search_returns_empty_when_amap_empty(monkeypatch, db_session: Session):
     class Settings:
         amap_key = "fake-key"
         amap_base_url = "https://restapi.amap.com"
@@ -205,9 +205,148 @@ def test_poi_search_generates_mock_when_amap_empty(monkeypatch, db_session: Sess
             limit=3,
         )
 
-    assert result.pois
-    assert result.pois[0].type == "food"
-    assert result.pois[0].poi_id.startswith("mock_")
-    persisted = db_session.get(POI, result.pois[0].poi_id)
-    assert persisted is not None
-    assert persisted.name == result.pois[0].name
+    assert result.pois == []
+
+
+def test_poi_search_does_not_mock_entertainment_when_amap_empty(monkeypatch, db_session: Session):
+    class Settings:
+        amap_key = "fake-key"
+        amap_base_url = "https://restapi.amap.com"
+        amap_timeout_seconds = 10
+
+    response = Mock()
+    response.raise_for_status.return_value = None
+    response.json.return_value = {"status": "1", "pois": []}
+
+    monkeypatch.setattr("app.services.poi_service.get_settings", lambda: Settings())
+    with patch("httpx.Client.get", return_value=response):
+        result = search_pois(
+            db=db_session,
+            source_keywords=["电影院", "影城", "影院"],
+            center=Point(name="搜索中心", longitude=114.384, latitude=30.522),
+            radius_meters=1500,
+            limit=3,
+        )
+
+    assert result.pois == []
+
+
+def test_poi_search_filters_irrelevant_amap_restaurants_for_barbecue(monkeypatch, db_session: Session):
+    class Settings:
+        amap_key = "fake-key"
+        amap_base_url = "https://restapi.amap.com"
+        amap_timeout_seconds = 10
+
+    response = Mock()
+    response.raise_for_status.return_value = None
+    response.json.return_value = {
+        "status": "1",
+        "pois": [
+            {
+                "id": "amap_korean",
+                "name": "高丽苑韩国料理",
+                "type": "餐饮服务;外国餐厅;韩国料理",
+                "address": "远洋世界附近",
+                "location": "114.3001,30.6001",
+                "biz_ext": {"rating": "4.8", "cost": "68"},
+            },
+            {
+                "id": "amap_bbq",
+                "name": "老街烧烤",
+                "type": "餐饮服务;中餐厅;特色/地方风味餐厅",
+                "address": "远洋世界附近",
+                "location": "114.3002,30.6002",
+                "biz_ext": {"rating": "4.5", "cost": "52"},
+            },
+        ],
+    }
+
+    monkeypatch.setattr("app.services.poi_service.get_settings", lambda: Settings())
+    with patch("httpx.Client.get", return_value=response):
+        result = search_pois(
+            db=db_session,
+            source_keywords=["烧烤", "烤肉"],
+            center=Point(name="远洋世界", longitude=114.3000, latitude=30.6000),
+            radius_meters=1500,
+            limit=5,
+        )
+
+    assert [poi.name for poi in result.pois] == ["老街烧烤"]
+
+
+def test_poi_search_filters_irrelevant_amap_restaurants_for_grilled_fish(monkeypatch, db_session: Session):
+    class Settings:
+        amap_key = "fake-key"
+        amap_base_url = "https://restapi.amap.com"
+        amap_timeout_seconds = 10
+
+    response = Mock()
+    response.raise_for_status.return_value = None
+    response.json.return_value = {
+        "status": "1",
+        "pois": [
+            {
+                "id": "amap_korean",
+                "name": "高丽苑韩国料理",
+                "type": "餐饮服务;外国餐厅;韩国料理",
+                "address": "群光广场附近",
+                "location": "114.3501,30.5301",
+                "biz_ext": {"rating": "4.8", "cost": "68"},
+            },
+            {
+                "id": "amap_fish",
+                "name": "江边城外烤鱼",
+                "type": "餐饮服务;中餐厅;特色/地方风味餐厅",
+                "address": "群光广场附近",
+                "location": "114.3502,30.5302",
+                "biz_ext": {"rating": "4.5", "cost": "72"},
+            },
+        ],
+    }
+
+    monkeypatch.setattr("app.services.poi_service.get_settings", lambda: Settings())
+    with patch("httpx.Client.get", return_value=response):
+        result = search_pois(
+            db=db_session,
+            source_keywords=["烤鱼", "烧烤", "烤肉"],
+            center=Point(name="群光广场", longitude=114.3500, latitude=30.5300),
+            radius_meters=1500,
+            limit=5,
+        )
+
+    assert [poi.name for poi in result.pois] == ["江边城外烤鱼"]
+
+
+def test_poi_search_does_not_mock_specific_food_when_amap_has_no_relevant_match(monkeypatch, db_session: Session):
+    class Settings:
+        amap_key = "fake-key"
+        amap_base_url = "https://restapi.amap.com"
+        amap_timeout_seconds = 10
+
+    response = Mock()
+    response.raise_for_status.return_value = None
+    response.json.return_value = {
+        "status": "1",
+        "pois": [
+            {
+                "id": "amap_korean",
+                "name": "高丽苑韩国料理",
+                "type": "餐饮服务;外国餐厅;韩国料理",
+                "address": "远洋世界附近",
+                "location": "114.3001,30.6001",
+                "biz_ext": {"rating": "4.8", "cost": "68"},
+            }
+        ],
+    }
+
+    monkeypatch.setattr("app.services.poi_service.get_settings", lambda: Settings())
+    with patch("httpx.Client.get", return_value=response):
+        result = search_pois(
+            db=db_session,
+            source_keywords=["烧烤", "烤肉"],
+            center=Point(name="远洋世界", longitude=114.3000, latitude=30.6000),
+            radius_meters=1500,
+            limit=5,
+        )
+
+    assert result.pois == []

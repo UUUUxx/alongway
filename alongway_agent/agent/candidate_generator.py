@@ -8,7 +8,7 @@ from typing import Dict, List
 from agent.backend_client import BackendClient
 from agent.exceptions import AgentError, ErrorCode
 from agent.filters import assess_availability, is_within_budget
-from agent.models import EnrichedCandidate, Location, POI, PlanRequest, TaskSpec, TaskType, UserIntent
+from agent.models import EnrichedCandidate, Location, PlanRequest, POI, TaskSpec, TaskType, UserIntent
 
 
 @dataclass
@@ -36,31 +36,16 @@ class CandidateGenerator:
         warnings: set[str] = set()
         deadline = time.perf_counter() + timeout_seconds
 
+        poi_results = await self._search_all_task_pois(
+            intent=intent,
+            request=request,
+            center=center,
+            deadline=deadline,
+            warnings=warnings,
+        )
+
         for task in intent.tasks:
-            remaining = deadline - time.perf_counter()
-            if remaining <= 0:
-                warnings.add("POI_SEARCH_TIMEOUT")
-                break
-            try:
-                pois = await asyncio.wait_for(
-                    self.backend_client.search_pois(
-                        source_keywords=task.source_keywords,
-                        center=center,
-                        radius_meters=request.constraints.search_radius_meters,
-                        limit=request.constraints.max_pois_per_task,
-                        specific_place_name=task.specific_place_name,
-                    ),
-                    timeout=remaining,
-                )
-            except Exception:
-                pois = self._fallback_pois_for_task(
-                    task=task,
-                    center=center,
-                    limit=request.constraints.max_pois_per_task,
-                )
-                warnings.add("POI_SEARCH_TIMEOUT_OR_ERROR")
-                if pois:
-                    warnings.add("POI_SEARCH_FALLBACK_USED")
+            pois = poi_results.get(task.task_id, [])
             deduped_pois = list({poi.poi_id: poi for poi in pois}.values())
             poi_candidate_count += len(deduped_pois)
 
@@ -74,22 +59,16 @@ class CandidateGenerator:
             budget = task.budget if task.budget is not None else request.budget
 
             if task.type in {TaskType.BUY_DRINK, TaskType.EAT_MEAL}:
+                deal_results = await self._search_task_deals(
+                    task=task,
+                    pois=deduped_pois,
+                    request=request,
+                    budget=budget,
+                    deadline=deadline,
+                    warnings=warnings,
+                )
                 for poi in deduped_pois:
-                    remaining = deadline - time.perf_counter()
-                    deal_timeout = max(1.5, min(2.0, remaining))
-                    try:
-                        deals = await asyncio.wait_for(
-                            self.backend_client.search_deals(
-                                poi_id=poi.poi_id,
-                                categories=task.source_keywords,
-                                max_price=budget,
-                                limit=request.constraints.max_deals_per_poi,
-                            ),
-                            timeout=deal_timeout,
-                        )
-                    except Exception:
-                        deals = []
-                        warnings.add("DEAL_SEARCH_TIMEOUT_OR_ERROR")
+                    deals = deal_results.get(poi.poi_id, [])
                     deal_candidate_count += len(deals)
 
                     if deals:
@@ -154,42 +133,70 @@ class CandidateGenerator:
             warnings=sorted(warnings),
         )
 
-    @staticmethod
-    def _fallback_pois_for_task(
-        task: TaskSpec,
+    async def _search_all_task_pois(
+        self,
+        intent: UserIntent,
+        request: PlanRequest,
         center: Location,
-        limit: int,
-    ) -> list[POI]:
-        if not center.has_coordinates() or limit <= 0:
-            return []
-        poi_type = task.category or "custom"
-        keyword = task.specific_place_name or (task.source_keywords[0] if task.source_keywords else task.raw_text)
-        templates = {
-            "food": [("顺路简餐", 18.0), ("附近小吃", 12.0), ("沿途餐厅", 22.0)],
-            "drink": [("顺路咖啡", 24.0), ("附近饮品", 16.0), ("咖啡小站", 28.0)],
-            "express": [("附近菜鸟驿站", None), ("顺路快递柜", None)],
-            "entertainment": [("顺路娱乐场所", 38.0), ("附近桌游", 35.0)],
-            "study": [("附近学习空间", None), ("顺路图书馆", None)],
-            "life": [("顺路服务点", None)],
-            "custom": [(f"{keyword}候选点", None)],
-        }
-        pois: list[POI] = []
-        for index, (name, cost) in enumerate(templates.get(poi_type, templates["custom"])[:limit], start=1):
-            lon = (center.longitude or 0) + 0.001 * index
-            lat = (center.latitude or 0) + 0.0007 * index
-            display_name = task.specific_place_name or name
-            pois.append(
-                POI(
-                    poi_id=f"mock_{task.task_id}_{index}",
-                    name=display_name,
-                    type=poi_type,
-                    address="高德 POI 超时后生成的临时候选点",
-                    location=f"{lon:.6f},{lat:.6f}",
-                    longitude=lon,
-                    latitude=lat,
-                    rating=4.2,
-                    cost=cost,
-                    source_keyword=keyword,
+        deadline: float,
+        warnings: set[str],
+    ) -> dict[str, list[POI]]:
+        async def search_one(task: TaskSpec) -> tuple[str, list[POI]]:
+            remaining = deadline - time.perf_counter()
+            if remaining <= 0:
+                warnings.add("POI_SEARCH_TIMEOUT")
+                return task.task_id, []
+            try:
+                pois = await asyncio.wait_for(
+                    self.backend_client.search_pois(
+                        source_keywords=task.source_keywords,
+                        center=center,
+                        radius_meters=request.constraints.search_radius_meters,
+                        limit=request.constraints.max_pois_per_task,
+                        specific_place_name=task.specific_place_name,
+                    ),
+                    timeout=remaining,
                 )
-            )
-        return pois
+                return task.task_id, pois
+            except Exception:
+                warnings.add("POI_SEARCH_TIMEOUT_OR_ERROR")
+                return task.task_id, []
+
+        results = await asyncio.gather(*(search_one(task) for task in intent.tasks))
+        return dict(results)
+
+    async def _search_task_deals(
+        self,
+        task: TaskSpec,
+        pois: list[POI],
+        request: PlanRequest,
+        budget: float | None,
+        deadline: float,
+        warnings: set[str],
+    ) -> dict[str, list]:
+        # Deal lookup is for enrichment, so cap it to the closest few POIs per task.
+        pois_to_enrich = pois[: min(2, len(pois))]
+
+        async def search_one(poi: POI) -> tuple[str, list]:
+            remaining = deadline - time.perf_counter()
+            if remaining <= 0:
+                warnings.add("DEAL_SEARCH_TIMEOUT_OR_ERROR")
+                return poi.poi_id, []
+            deal_timeout = max(0.5, min(1.5, remaining))
+            try:
+                deals = await asyncio.wait_for(
+                    self.backend_client.search_deals(
+                        poi_id=poi.poi_id,
+                        categories=task.source_keywords,
+                        max_price=budget,
+                        limit=request.constraints.max_deals_per_poi,
+                    ),
+                    timeout=deal_timeout,
+                )
+                return poi.poi_id, deals
+            except Exception:
+                warnings.add("DEAL_SEARCH_TIMEOUT_OR_ERROR")
+                return poi.poi_id, []
+
+        results = await asyncio.gather(*(search_one(poi) for poi in pois_to_enrich))
+        return dict(results)

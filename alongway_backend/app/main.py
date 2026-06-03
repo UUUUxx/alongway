@@ -18,6 +18,7 @@ from app.routers import (
     internal_deals,
     internal_pois,
     internal_route,
+    map_config,
     plan,
     poi_admin,
 )
@@ -50,7 +51,9 @@ app.add_middleware(
         "http://localhost:3000",
         "http://127.0.0.1:5173",
         "http://localhost:8001",  # Agent service
+        "null",  # Local file:// frontend during quick demos
     ],
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -63,6 +66,7 @@ app.include_router(geocode.router)
 app.include_router(internal_pois.router)
 app.include_router(internal_deals.router)
 app.include_router(internal_route.router)
+app.include_router(map_config.router)
 app.include_router(poi_admin.router)
 app.include_router(deal_admin.router)
 app.include_router(admin.router)

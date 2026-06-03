@@ -297,3 +297,15 @@ class PlanHistoryResponse(BaseModel):
 
     entries: list[PlanHistoryEntry]
     count: int
+
+
+# ==================== Map Config Models ====================
+
+
+class MapConfigResponse(BaseModel):
+    """GET /api/config/map response — Amap JS API configuration for frontend."""
+
+    amap_js_key: str
+    amap_version: str = "2.0"
+    default_center: list[float] = [114.4052, 30.5078]
+    default_zoom: int = 14

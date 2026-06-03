@@ -166,7 +166,7 @@ tasks item:
 - task_id: 用 "task_1"、"task_2"。
 - type: 只能是 pickup_express、buy_drink、eat_meal、visit_place、custom。
 - raw_text: 用户原话中的任务短语。
-- category: express、drink、food、entertainment、study、life、custom。
+- category: express、drink、food、movie、board_game、hair、nail、entertainment、study、life、custom。
 - specific_place_name: 用户点名的商家/地点，例如“星巴克”“韵苑菜鸟驿站”；没有则 null。
 - source_keywords: 搜索词数组。若用户点名具体地点，第一项必须是该地点名；若只说大类，给出大类和同义词，例如“韩餐/韩国料理/餐厅”。
 - budget: 该任务预算或 null。
@@ -179,4 +179,9 @@ tasks item:
 4. “去图书馆/教学楼”如果是最终目的地，不要再作为顺路任务；如果是中途想去，则作为 visit_place。
 5. 起点没说就 start_text=null，不要编造。
 6. 终点没说就 end_text=null，不要编造。
+7. “看电影/看场电影/去影院”输出独立任务 category=movie，source_keywords 包含 电影院、影城、影院、电影票。
+8. “玩桌游/桌游吧/剧本杀”输出独立任务 category=board_game，source_keywords 包含 桌游店、桌游吧、桌游、剧本杀。
+9. “理发/剪头发/做头发”输出独立任务 category=hair，source_keywords 包含 理发店、美发、发型设计、沙龙。
+10. “美甲/做指甲”输出独立任务 category=nail，source_keywords 包含 美甲店、美甲、美睫美甲。
+11. 用户说多个事项时必须拆成多个 tasks，例如“想剪个头发，再看场电影”应输出 hair 和 movie 两个任务，不要合并成 entertainment/custom 一个任务。
 """.strip()

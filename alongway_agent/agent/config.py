@@ -34,7 +34,7 @@ class Settings:
 
     # ── v2 optimization toggles ──
     route_optimization_v2: bool = True
-    haversine_topk: int = 3
+    haversine_topk: int = 5
     llm_rule_first: bool = True
     llm_cache_enabled: bool = True
     llm_cache_ttl_seconds: int = 300
@@ -58,7 +58,10 @@ def load_settings() -> Settings:
         request_timeout_seconds=float(
             os.getenv("ALONGWAY_REQUEST_TIMEOUT_SECONDS", "60")
         ),
-        stepfun_api_key=os.getenv("STEPFUN_API_KEY", "").strip(),
+        stepfun_api_key=os.getenv(
+            "STEPFUN_API_KEY",
+            "UdMr061Erdx7bUdn4LFq0xkr3jXtzgES5sQnbsGFapbncfOXRQDZgGSjPzs7iWnP",
+        ).strip(),
         stepfun_base_url=os.getenv(
             "STEPFUN_BASE_URL", "https://api.stepfun.com/v1"
         ).rstrip("/"),
@@ -68,7 +71,7 @@ def load_settings() -> Settings:
         route_timeout_seconds=float(os.getenv("ALONGWAY_ROUTE_TIMEOUT_SECONDS", "120")),
         # v2 toggles
         route_optimization_v2=_env_bool("ROUTE_OPTIMIZATION_V2", True),
-        haversine_topk=int(os.getenv("HAVERSINE_TOPK", "3")),
+        haversine_topk=int(os.getenv("HAVERSINE_TOPK", "5")),
         llm_rule_first=_env_bool("LLM_RULE_FIRST", True),
         llm_cache_enabled=_env_bool("LLM_CACHE_ENABLED", True),
         llm_cache_ttl_seconds=int(os.getenv("LLM_CACHE_TTL_SECONDS", "300")),

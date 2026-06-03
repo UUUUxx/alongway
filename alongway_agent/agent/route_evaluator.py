@@ -45,7 +45,14 @@ class RouteEvaluator:
         use_real_route: bool = True,
     ) -> RouteEvaluationResult:
         groups = [
-            sorted(candidates_by_task.get(task.task_id, []), key=self._rough_candidate_key)
+            sorted(
+                [
+                    candidate
+                    for candidate in candidates_by_task.get(task.task_id, [])
+                    if not self._is_after_destination(start, end, candidate.poi.to_location())
+                ],
+                key=lambda candidate: self._rough_candidate_key(candidate, request.preferences),
+            )
             for task in tasks
         ]
         if not groups or any(not group for group in groups):
@@ -53,10 +60,11 @@ class RouteEvaluator:
 
         max_candidates = request.constraints.max_route_candidates
         candidate_combinations: list[tuple[EnrichedCandidate, ...]] = []
-        for combination in product(*groups):
-            candidate_combinations.append(combination)
-            if len(candidate_combinations) >= max_candidates:
-                break
+        all_combinations = list(product(*groups))
+        all_combinations.sort(
+            key=lambda combination: self._rough_combination_key(combination, request.preferences)
+        )
+        candidate_combinations = all_combinations[:max_candidates]
 
         plans: list[CandidatePlan] = []
         rejected_plans: list[CandidatePlan] = []
@@ -115,13 +123,48 @@ class RouteEvaluator:
         )
 
     @staticmethod
-    def _rough_candidate_key(candidate: EnrichedCandidate) -> tuple[float, float, float]:
+    def _rough_candidate_key(candidate: EnrichedCandidate, preferences) -> tuple[float, float, float]:
         price = candidate.deal.price if candidate.deal else candidate.poi.cost
-        return (
-            -(candidate.poi.rating or 0),
-            price if price is not None else 9999,
-            -(candidate.deal.monthly_sales if candidate.deal and candidate.deal.monthly_sales else 0),
-        )
+        rating = candidate.deal.rating if candidate.deal and candidate.deal.rating is not None else candidate.poi.rating
+        sales = candidate.deal.monthly_sales if candidate.deal and candidate.deal.monthly_sales else 0
+        price_key = price if price is not None else 9999
+        rating_key = -(rating or 0)
+        sales_key = -sales
+        if preferences.prefer_low_price:
+            return (price_key, rating_key, sales_key)
+        if preferences.prefer_high_rating:
+            return (rating_key, price_key, sales_key)
+        if preferences.prefer_high_sales:
+            return (sales_key, rating_key, price_key)
+        return (rating_key, price_key, sales_key)
+
+    @classmethod
+    def _rough_combination_key(cls, combination: tuple[EnrichedCandidate, ...], preferences) -> tuple[float, float, float]:
+        prices = [
+            candidate.deal.price if candidate.deal else candidate.poi.cost
+            for candidate in combination
+            if (candidate.deal and candidate.deal.price is not None) or candidate.poi.cost is not None
+        ]
+        ratings = [
+            candidate.deal.rating if candidate.deal and candidate.deal.rating is not None else candidate.poi.rating
+            for candidate in combination
+            if (candidate.deal and candidate.deal.rating is not None) or candidate.poi.rating is not None
+        ]
+        sales = [
+            candidate.deal.monthly_sales or 0
+            for candidate in combination
+            if candidate.deal is not None
+        ]
+        total_price = sum(prices) if prices else 9999
+        avg_rating = sum(ratings) / len(ratings) if ratings else 0
+        max_sales = max(sales, default=0)
+        if preferences.prefer_low_price:
+            return (total_price, -avg_rating, -max_sales)
+        if preferences.prefer_high_rating:
+            return (-avg_rating, total_price, -max_sales)
+        if preferences.prefer_high_sales:
+            return (-max_sales, -avg_rating, total_price)
+        return (-avg_rating, total_price, -max_sales)
 
     @staticmethod
     def _build_stops(
@@ -174,6 +217,33 @@ class RouteEvaluator:
         if request.budget is not None and plan.estimated_cost > request.budget:
             return False
         return True
+
+    @classmethod
+    def _is_after_destination(
+        cls,
+        start: Location,
+        end: Location,
+        poi: Location,
+    ) -> bool:
+        if not start.has_coordinates() or not end.has_coordinates() or not poi.has_coordinates():
+            return False
+        if cls._haversine_meters(
+            end.longitude or 0,
+            end.latitude or 0,
+            poi.longitude or 0,
+            poi.latitude or 0,
+        ) <= 200:
+            return False
+
+        sx, sy = start.longitude or 0, start.latitude or 0
+        ex, ey = end.longitude or 0, end.latitude or 0
+        px, py = poi.longitude or 0, poi.latitude or 0
+        dx, dy = ex - sx, ey - sy
+        length_squared = dx * dx + dy * dy
+        if length_squared <= 0:
+            return False
+        projection = ((px - sx) * dx + (py - sy) * dy) / length_squared
+        return projection > 1.03
 
     @staticmethod
     def _constraint_overage_key(plan: CandidatePlan, request: PlanRequest) -> tuple[float, float, float]:

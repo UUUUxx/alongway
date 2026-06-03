@@ -27,3 +27,12 @@ def test_backend_env_file_is_loaded():
     settings = Settings()
 
     assert settings.amap_key
+
+
+def test_amap_js_key_defaults_to_amap_key(monkeypatch):
+    monkeypatch.delenv("AMAP_JS_KEY", raising=False)
+    monkeypatch.setenv("AMAP_KEY", "test-amap-key")
+
+    settings = Settings()
+
+    assert settings.amap_js_key == "test-amap-key"

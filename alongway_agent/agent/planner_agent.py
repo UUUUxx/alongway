@@ -96,7 +96,11 @@ class PlanAgent:
                     fallback_suggestions=["可以说明想顺路完成的事项，例如取快递、买奶茶或吃饭。"],
                 )
 
-            center = self._search_center(start, end)
+            center = self._search_center(
+                start,
+                end,
+                prefer_destination=intent.preferences.prefer_less_detour,
+            )
             route_started = time.perf_counter()
             poi_started = time.perf_counter()
             base_route_task = asyncio.create_task(
@@ -118,6 +122,12 @@ class PlanAgent:
                 base_route_task,
                 candidate_task,
             )
+            use_real_eval = not self.v2_enabled
+            eval_base_route = (
+                base_route
+                if use_real_eval
+                else self._fallback_route([start, end], request.travel_mode)
+            )
             timings["base_route_ms"] = int((time.perf_counter() - route_started) * 1000)
             timings["poi_ms"] = int((time.perf_counter() - poi_started) * 1000)
             metrics.base_route_ms = timings["base_route_ms"]
@@ -127,7 +137,7 @@ class PlanAgent:
             # ── v2: Haversine pre-filter ──
             candidates_by_task = candidate_result.candidates_by_task
             if self.v2_enabled and self.haversine_filter is not None:
-                filtered = self.haversine_filter.filter(start, end, candidates_by_task)
+                filtered = self.haversine_filter.filter(start, end, candidates_by_task, intent.preferences)
                 haversine_count = sum(len(v) for v in filtered.values())
                 metrics.haversine_topk_used = True
                 metrics.haversine_topk_count = haversine_count
@@ -137,8 +147,6 @@ class PlanAgent:
                     for task_id, fcs in filtered.items()
                 }
 
-            # ── v2: Haversine-only route evaluation (skip Amap for all candidates) ──
-            use_real_eval = not self.v2_enabled
             route_started = time.perf_counter()
             route_result = await self.route_evaluator.evaluate(
                 request=request,
@@ -146,7 +154,7 @@ class PlanAgent:
                 end=end,
                 tasks=intent.tasks,
                 candidates_by_task=candidates_by_task,
-                base_route=base_route,
+                base_route=eval_base_route,
                 timeout_seconds=self.route_timeout_seconds,
                 use_real_route=use_real_eval,
             )
@@ -184,8 +192,9 @@ class PlanAgent:
                     end=end,
                     tasks=intent.tasks,
                     candidates_by_task=candidates_by_task,
-                    base_route=base_route,
+                    base_route=eval_base_route,
                     timeout_seconds=self.route_timeout_seconds,
+                    use_real_route=use_real_eval,
                 )
                 relaxed_route_constraints = bool(route_result.plans)
                 metrics.candidate_routes_evaluated += route_result.route_candidate_count
@@ -221,12 +230,13 @@ class PlanAgent:
                     ]
                     + [end]
                 )
+                verify_timeout = self.route_timeout_seconds
                 try:
                     real_route = await asyncio.wait_for(
                         self.backend_client.calculate_route(
                             verify_points, request.travel_mode
                         ),
-                        timeout=self.route_timeout_seconds,
+                        timeout=verify_timeout,
                     )
                     selected_plan.route = real_route
                     # Recalculate detour and extra time
@@ -352,11 +362,21 @@ class PlanAgent:
             )
 
     @staticmethod
-    def _search_center(start: Optional[Location], end: Optional[Location]) -> Location:
+    def _search_center(
+        start: Optional[Location],
+        end: Optional[Location],
+        prefer_destination: bool = False,
+    ) -> Location:
         if start is None or end is None:
             raise AgentError(
                 ErrorCode.MISSING_LOCATION,
                 "缺少起点或终点经纬度，请先在前端选择地点。",
+            )
+        if prefer_destination:
+            return Location(
+                name="搜索中心",
+                longitude=end.longitude,
+                latitude=end.latitude,
             )
         return Location(
             name="搜索中心",

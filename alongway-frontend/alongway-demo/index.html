@@ -274,103 +274,15 @@
     // ─── REDUCED MOTION CHECK ───────────────────────────────────────
     const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // ─── MOCK DATA (unchanged) ─────────────────────────────────────
-    const MOCK_PLAN_RESULT = {
-      success: true,
-      request_id: "demo-001",
-      plan: {
-        summary: {
-          origin: { name: "武汉大学", address: "珞珈山路16号" },
-          destination: { name: "光谷广场", address: "珞喻路726号" },
-          total_distance_km: 4.2,
-          total_time_min: 52,
-          total_cost: 64.8,
-          travel_mode: "walking",
-          recommend_reason: "为你找到了3个顺路好店，团购最高省42元"
-        },
-        route_overview: {
-          waypoints: [
-            { order: 0, name: "武汉大学",         type: "origin",      longitude: 114.3645, latitude: 30.5378 },
-            { order: 1, name: "图书馆角落咖啡",    type: "poi",         longitude: 114.3680, latitude: 30.5365, detour_meters: 80 },
-            { order: 2, name: "小川料理(街道口店)", type: "poi",         longitude: 114.3820, latitude: 30.5280, detour_meters: 150 },
-            { order: 3, name: "喜茶(光谷步行街)",  type: "poi",         longitude: 114.3990, latitude: 30.5110, detour_meters: 60 },
-            { order: 4, name: "光谷广场",          type: "destination", longitude: 114.4052, latitude: 30.5078 }
-          ],
-          segments: [
-            { from: 0, to: 1, distance_m: 380,  time_min: 5,  instruction: "向东沿珞珈山路步行" },
-            { from: 1, to: 2, distance_m: 1600, time_min: 20, instruction: "经珞狮路向南至街道口" },
-            { from: 2, to: 3, distance_m: 1800, time_min: 22, instruction: "沿珞喻路向东至光谷步行街" },
-            { from: 3, to: 4, distance_m: 620,  time_min: 5,  instruction: "步行至光谷广场" }
-          ]
-        },
-        pois: [
-          {
-            poi_id: "poi-whu-coffee", name: "图书馆角落咖啡", type: "咖啡",
-            address: "武汉大学图书馆一楼", longitude: 114.3680, latitude: 30.5365,
-            rating: 4.7, cost: 28, detour_meters: 80, detour_time_min: 1,
-            recommend_score: 0.92, recommend_reason: "武大学子最爱，步行仅绕80米",
-            deals: [{
-              deal_id: "deal-001", deal_title: "美式咖啡+芝士蛋糕套餐", price: 19.9,
-              original_price: 38, category: "饮品甜点", monthly_sales: 2340, rating: 4.8,
-              included_items: ["冰美式 x1", "芝士蛋糕 x1"],
-              reviews: ["武大必打卡", "性价比超高"], business_time: "07:30-22:00", valid_time: "2026-06-30"
-            }]
-          },
-          {
-            poi_id: "poi-jdk-food", name: "小川料理(街道口店)", type: "日料",
-            address: "街道口鹏程国际B1", longitude: 114.3820, latitude: 30.5280,
-            rating: 4.5, cost: 45, detour_meters: 150, detour_time_min: 2,
-            recommend_score: 0.88, recommend_reason: "日料好评榜Top3，路过顺带吃饭",
-            deals: [
-              {
-                deal_id: "deal-002", deal_title: "单人午市定食", price: 29.9,
-                original_price: 58, category: "日料定食", monthly_sales: 5600, rating: 4.6,
-                included_items: ["三文鱼刺身", "味噌汤", "米饭", "小菜"],
-                reviews: ["份量足", "刺身新鲜", "回头客很多"], business_time: "11:00-14:00", valid_time: "2026-06-30"
-              },
-              {
-                deal_id: "deal-003", deal_title: "双人寿司拼盘", price: 49.9,
-                original_price: 88, category: "日料寿司", monthly_sales: 3200, rating: 4.7,
-                included_items: ["三文鱼寿司 x4", "鳗鱼寿司 x4", "甜虾寿司 x4"],
-                reviews: ["摆盘好看", "食材新鲜"], business_time: "11:00-21:00", valid_time: "2026-06-30"
-              }
-            ]
-          },
-          {
-            poi_id: "poi-ggtea", name: "喜茶(光谷步行街店)", type: "茶饮",
-            address: "光谷步行街1期1楼", longitude: 114.3990, latitude: 30.5110,
-            rating: 4.4, cost: 22, detour_meters: 60, detour_time_min: 1,
-            recommend_score: 0.85, recommend_reason: "到达前顺手带一杯，几乎零绕路",
-            deals: [{
-              deal_id: "deal-004", deal_title: "多肉葡萄+烤黑糖波波", price: 24.9,
-              original_price: 36, category: "茶饮", monthly_sales: 8900, rating: 4.5,
-              included_items: ["多肉葡萄 x1", "烤黑糖波波 x1"],
-              reviews: ["经典搭配", "夏天必喝"], business_time: "09:30-22:30", valid_time: "2026-06-30"
-            }]
-          }
-        ]
-      }
-    };
-
     const EXAMPLE_QUERIES = [
-      { text: "从武大去光谷，顺路找点吃的", tag: "饭点灵感", icon: "🍜" },
-      { text: "从汉口火车站到江汉路，想喝杯咖啡", tag: "路过歇脚", icon: "☕" },
-      { text: "从武汉大学到光谷广场，预算100以内", tag: "省钱路线", icon: "💰" },
-      { text: "从街道口到光谷步行街，找点甜品", tag: "下午茶", icon: "🍰" },
+      { text: "从华中科技大学，去世界城广场，我想喝茶百道，吃寿司，再吃一块蛋糕", tag: "目的地好店", icon: "🍰" },
+      { text: "从武汉大学，去群光广场，吃烤鱼，唱ktv，再买杯咖啡，买杯奶茶", tag: "多任务顺路", icon: "🎤" },
+      { text: "从华中科技大学明德楼，到远洋世界，剪个头发，吃烧烤，再喝杯奶茶", tag: "生活服务", icon: "✂️" },
+      { text: "我想从华中师范大学，去武汉大学，我想顺路吃早餐再买杯咖啡，吃点小吃", tag: "早餐小吃", icon: "☕" },
     ];
 
-    // ─── API CLIENT (unchanged) ────────────────────────────────────
-    const USE_MOCK = false;
+    // ─── API CLIENT ─────────────────────────────────────────────────
     const BASE_URL = 'http://127.0.0.1:8000';
-
-    const LOCATION_MAP = {
-      '武汉大学':   { longitude: 114.3645, latitude: 30.5378, address: '珞珈山路16号' },
-      '光谷广场':   { longitude: 114.4052, latitude: 30.5078, address: '珞喻路726号' },
-      '光谷步行街': { longitude: 114.3990, latitude: 30.5110, address: '光谷步行街1期' },
-      '汉口火车站': { longitude: 114.2580, latitude: 30.6180, address: '发展大道188号' },
-      '江汉路':     { longitude: 114.2830, latitude: 30.5820, address: '江汉路步行街' },
-      '街道口':     { longitude: 114.3820, latitude: 30.5280, address: '珞喻路街道口' },
-    };
 
     function generateUUID() {
       return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -379,39 +291,137 @@
       });
     }
 
-    function extractLocation(query) {
-      for (const [name, loc] of Object.entries(LOCATION_MAP)) {
-        if (query.includes(name)) return { name, ...loc };
-      }
-      return null;
+    function parseRouteText(userQuery) {
+      const text = userQuery.trim();
+      const match = text.match(/(?:从|由)\s*(.+?)\s*(?:到|去|前往|→)\s*([^，。；;,.]+)(.*)?/);
+      if (!match) return { startText: null, endText: null };
+      return {
+        startText: cleanPlaceText(match[1]),
+        endText: cleanPlaceText(match[2]),
+      };
     }
 
-    async function submitPlan({ userQuery, travelMode = 'walking', budget, preferences }) {
-      if (USE_MOCK) {
-        await new Promise(r => setTimeout(r, 1800 + Math.random() * 1200));
-        return MOCK_PLAN_RESULT;
-      }
+    function cleanPlaceText(value) {
+      return String(value || '')
+        .replace(/^(我|俺|咱|现在|当前位置)\s*/, '')
+        .replace(/\s*(路上|顺路|沿途|途中).*$/, '')
+        .replace(/\s*(出发|出门|开始)\s*[，,。；;、]*$/, '')
+        .replace(/^[\s，,。；;、]+|[\s，,。；;、]+$/g, '')
+        .trim();
+    }
 
-      const match = userQuery.match(/从(.+?)(?:到|去|→|前往)(.+)/);
-      let start, end;
-      if (match) {
-        start = extractLocation(match[1]) || Object.values(LOCATION_MAP)[0];
-        end = extractLocation(match[2]) || Object.values(LOCATION_MAP)[1];
-      } else {
-        start = Object.values(LOCATION_MAP)[0];
-        end = Object.values(LOCATION_MAP)[1];
-      }
+    function extractBudget(userQuery) {
+      const match = userQuery.match(/(\d+(?:\.\d+)?)\s*(?:元|块|块钱)\s*(?:以内|以下|内)?/);
+      return match ? Number(match[1]) : null;
+    }
 
+    function normalizeLocation(item, fallbackName, source) {
+      if (!item || item.longitude == null || item.latitude == null) return null;
+      return {
+        name: item.name || fallbackName || '位置',
+        address: item.address || fallbackName || '',
+        location: item.location || `${item.longitude},${item.latitude}`,
+        longitude: Number(item.longitude),
+        latitude: Number(item.latitude),
+        ...(item.accuracy_meters != null && { accuracy_meters: item.accuracy_meters }),
+        ...(source && { source }),
+      };
+    }
+
+    async function geocodeAddress(address, city = '武汉') {
+      const text = cleanPlaceText(address);
+      if (!text) return null;
+      try {
+        const res = await fetch(`${BASE_URL}/api/geocode`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address: text, city }),
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (!data.success || !data.results?.length) return null;
+        return normalizeLocation(data.results[0], text, 'backend_geocode');
+      } catch {
+        return null;
+      }
+    }
+
+    let amapConfigPromise = null;
+    let amapScriptPromise = null;
+
+    async function fetchMapConfig() {
+      if (!amapConfigPromise) {
+        amapConfigPromise = fetch(`${BASE_URL}/api/config/map`)
+          .then(res => {
+            if (!res.ok) throw new Error('地图配置加载失败');
+            return res.json();
+          });
+      }
+      return amapConfigPromise;
+    }
+
+    async function loadAmapSdk() {
+      const config = await fetchMapConfig();
+      if (!config?.amap_js_key) throw new Error('缺少高德 JS Key');
+      if (window.AMap) return { AMap: window.AMap, config };
+      if (!amapScriptPromise) {
+        amapScriptPromise = new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = `https://webapi.amap.com/maps?v=${config.amap_version || '2.0'}&key=${encodeURIComponent(config.amap_js_key)}`;
+          script.async = true;
+          script.onload = () => window.AMap ? resolve(window.AMap) : reject(new Error('高德地图 SDK 未初始化'));
+          script.onerror = () => reject(new Error('高德地图 SDK 加载失败'));
+          document.head.appendChild(script);
+        });
+      }
+      const AMap = await amapScriptPromise;
+      return { AMap, config };
+    }
+
+    function getBrowserLocation() {
+      if (!navigator.geolocation) return Promise.resolve(null);
+      return new Promise(resolve => {
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            const { latitude, longitude, accuracy } = position.coords;
+            resolve(normalizeLocation({
+              name: '当前位置',
+              address: '浏览器定位',
+              location: `${longitude},${latitude}`,
+              longitude,
+              latitude,
+              accuracy_meters: accuracy,
+            }, '当前位置', 'browser_geolocation'));
+          },
+          () => resolve(null),
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 },
+        );
+      });
+    }
+
+    async function submitPlan({ userQuery, travelMode = 'walking', budget, preferences, currentLocation }) {
+      const city = '武汉';
+      const { startText, endText } = parseRouteText(userQuery);
+      const currentLocationPromise = startText
+        ? Promise.resolve(null)
+        : (currentLocation ? Promise.resolve(currentLocation) : getBrowserLocation());
+      const [startLocation, endLocation, resolvedCurrentLocation] = await Promise.all([
+        startText ? geocodeAddress(startText, city) : Promise.resolve(null),
+        endText ? geocodeAddress(endText, city) : Promise.resolve(null),
+        currentLocationPromise,
+      ]);
       const payload = {
         request_id: generateUUID(),
         user_query: userQuery,
-        start_location: { name: start.name, address: start.address, location: start.name, longitude: start.longitude, latitude: start.latitude },
-        end_location: { name: end.name, address: end.address, location: end.name, longitude: end.longitude, latitude: end.latitude },
-        city: '武汉',
+        city,
         travel_mode: travelMode,
-        ...(budget && { budget }),
-        ...(preferences && { preferences }),
+        preferences: preferences || {},
+        ...(startLocation && { start_location: startLocation }),
+        ...(endLocation && { end_location: endLocation }),
+        ...(resolvedCurrentLocation && { current_location: resolvedCurrentLocation }),
       };
+      const effectiveBudget = budget ?? extractBudget(userQuery);
+      if (effectiveBudget != null) payload.budget = effectiveBudget;
 
       const res = await fetch(`${BASE_URL}/api/plan`, {
         method: 'POST',
@@ -677,12 +687,20 @@
     ];
 
     function PreferenceTags({ preferences, onChange }) {
+      const makeSinglePreference = (key) => ({
+        prefer_less_detour: false,
+        prefer_low_price: false,
+        prefer_high_rating: false,
+        prefer_high_sales: false,
+        prefer_fast_arrival: false,
+        [key]: true,
+      });
       return (
         <div className="flex flex-wrap gap-2">
           {PREF_TAGS.map(({ key, label, emoji }) => {
             const active = preferences[key];
             return (
-              <button key={key} onClick={() => onChange({ ...preferences, [key]: !preferences[key] })}
+              <button key={key} onClick={() => onChange(makeSinglePreference(key))}
                 data-active={active ? "true" : "false"}
                 className={`pref-tag inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-medium cursor-pointer border ${active
                   ? 'bg-mt-yellow text-ink-900 border-mt-yellow-dark shadow-sm'
@@ -721,7 +739,7 @@
       return d;
     }
 
-    function MapView({ waypoints }) {
+    function SvgRouteMap({ waypoints }) {
       const [drawn, setDrawn] = useState(false);
       useEffect(() => { const t = setTimeout(() => setDrawn(true), 100); return () => clearTimeout(t); }, []);
       const points = normalizeCoords(waypoints);
@@ -802,6 +820,116 @@
           </div>
         </div>
       );
+    }
+
+    function formatMapMarker(waypoint) {
+      const label = waypoint.type === 'origin' ? '起' : waypoint.type === 'destination' ? '终' : waypoint.order;
+      const color = waypoint.type === 'origin' ? '#10B981' : waypoint.type === 'destination' ? '#FF4D3D' : '#FFD100';
+      const textColor = waypoint.type === 'poi' ? '#17140F' : '#FFFFFF';
+      return `
+        <div style="display:flex;align-items:center;gap:6px;transform:translate(-12px,-30px);">
+          <div style="width:24px;height:24px;border-radius:999px;background:${color};color:${textColor};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;box-shadow:0 2px 8px rgba(23,20,15,.22);border:2px solid white;">${label}</div>
+          <div style="max-width:132px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:rgba(255,255,255,.95);border:1px solid rgba(243,231,200,.8);border-radius:8px;padding:3px 8px;font-size:12px;font-weight:600;color:#17140F;box-shadow:0 2px 8px rgba(23,20,15,.12);">${waypoint.name || ''}</div>
+        </div>
+      `;
+    }
+
+    function AmapRouteMap({ waypoints, polyline }) {
+      const containerRef = useRef(null);
+      const mapRef = useRef(null);
+      const [status, setStatus] = useState('loading');
+
+      useEffect(() => {
+        let disposed = false;
+        const validWaypoints = (waypoints || []).filter(w => Number.isFinite(Number(w.longitude)) && Number.isFinite(Number(w.latitude)));
+        const routePath = (polyline?.length >= 2 ? polyline : validWaypoints.map(w => [w.longitude, w.latitude]))
+          .map(point => [Number(point[0]), Number(point[1])])
+          .filter(point => Number.isFinite(point[0]) && Number.isFinite(point[1]));
+
+        if (!containerRef.current || validWaypoints.length < 2 || routePath.length < 2) {
+          setStatus('fallback');
+          return undefined;
+        }
+
+        loadAmapSdk()
+          .then(({ AMap, config }) => {
+            if (disposed || !containerRef.current) return;
+            const map = new AMap.Map(containerRef.current, {
+              viewMode: '2D',
+              resizeEnable: true,
+              zoom: config.default_zoom || 14,
+              center: routePath[0] || config.default_center || [114.4052, 30.5078],
+              mapStyle: 'amap://styles/normal',
+            });
+            mapRef.current = map;
+
+            const path = routePath.map(([lng, lat]) => new AMap.LngLat(lng, lat));
+            const routeShadow = new AMap.Polyline({
+              path,
+              strokeColor: '#17140F',
+              strokeOpacity: 0.18,
+              strokeWeight: 11,
+              lineJoin: 'round',
+              lineCap: 'round',
+              zIndex: 40,
+            });
+            const routeLine = new AMap.Polyline({
+              path,
+              strokeColor: '#FFD100',
+              strokeOpacity: 0.95,
+              strokeWeight: 7,
+              lineJoin: 'round',
+              lineCap: 'round',
+              zIndex: 50,
+            });
+            const markers = validWaypoints.map(waypoint => new AMap.Marker({
+              position: [Number(waypoint.longitude), Number(waypoint.latitude)],
+              content: formatMapMarker(waypoint),
+              offset: new AMap.Pixel(0, 0),
+              zIndex: waypoint.type === 'poi' ? 90 : 100,
+            }));
+            const overlays = [routeShadow, routeLine, ...markers];
+            map.add(overlays);
+            map.setFitView(overlays, false, [34, 24, 34, 24]);
+            setStatus('ready');
+          })
+          .catch(() => {
+            if (!disposed) setStatus('fallback');
+          });
+
+        return () => {
+          disposed = true;
+          if (mapRef.current) {
+            mapRef.current.destroy();
+            mapRef.current = null;
+          }
+        };
+      }, [waypoints, polyline]);
+
+      if (status === 'fallback') {
+        return <SvgRouteMap waypoints={waypoints || []}/>;
+      }
+
+      return (
+        <div className="relative w-full rounded-2xl overflow-hidden border border-mt-street bg-white shadow-card">
+          <div ref={containerRef} className="w-full h-[260px] sm:h-[320px]"/>
+          {status === 'loading' && (
+            <div className="absolute inset-0 flex items-center justify-center bg-mt-rice/80 backdrop-blur-sm">
+              <div className="flex items-center gap-2 text-sm font-medium text-ink-600">
+                <span className="w-4 h-4 rounded-full border-2 border-mt-yellow border-t-transparent animate-spin"/>
+                加载真实路线地图
+              </div>
+            </div>
+          )}
+          <div className="absolute bottom-3 right-3">
+            <div className="bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[10px] text-ink-500 font-medium shadow-sm border border-mt-street/60">高德真实路线</div>
+          </div>
+        </div>
+      );
+    }
+
+    function MapView({ waypoints, polyline }) {
+      return <AmapRouteMap waypoints={waypoints || []} polyline={polyline || []}/>;
     }
 
     // ─── ROUTE SUMMARY (receipt/bill style) ────────────────────────
@@ -1164,7 +1292,7 @@
     function HomePage({ onSearch, loading }) {
       const [query, setQuery] = useState('');
       const [preferences, setPreferences] = useState({
-        prefer_less_detour: true, prefer_low_price: true,
+        prefer_less_detour: true, prefer_low_price: false,
         prefer_high_rating: false, prefer_high_sales: false, prefer_fast_arrival: false,
       });
       const inputRef = useRef(null);
@@ -1185,22 +1313,6 @@
             {/* Hero section */}
             <div className={`text-center mb-6 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
               <div className="hero-pattern -mx-4 px-4 py-5 sm:py-8 mb-4 sm:mb-6 rounded-2xl">
-                {/* Data capsules */}
-                <div className="flex items-center justify-center gap-2 mb-5 flex-wrap">
-                  <div className="data-capsule inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/80 border border-mt-street rounded-full text-xs text-ink-600 shadow-sm" style={{animationDelay:'100ms'}}>
-                    <span className="text-sm">🍜</span>饭点热度
-                    <span className="font-semibold text-mt-deal-red">高</span>
-                  </div>
-                  <div className="data-capsule inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/80 border border-mt-street rounded-full text-xs text-ink-600 shadow-sm" style={{animationDelay:'200ms'}}>
-                    <span className="text-sm">🎯</span>绕路
-                    <span className="font-semibold text-mt-city-green">&lt;3min</span>
-                  </div>
-                  <div className="data-capsule inline-flex items-center gap-1.5 px-3 py-1.5 bg-mt-yellow/10 border border-mt-yellow/30 rounded-full text-xs text-ink-700 shadow-sm" style={{animationDelay:'300ms'}}>
-                    <span className="text-sm">🎫</span>今日可省
-                    <span className="font-semibold text-mt-deal-red">¥42</span>
-                  </div>
-                </div>
-
                 <h2 className="text-2xl sm:text-3xl font-display font-bold text-ink-900 mb-3 leading-tight">
                   这一路<br/>
                   <span className="text-mt-yellow-dark">顺手把好店带上</span>
@@ -1230,7 +1342,7 @@
                     <Icons.Navigation className={`w-5 h-5 flex-shrink-0 transition-colors duration-200 ${inputFocused ? 'text-mt-yellow-dark' : 'text-ink-300'}`}/>
                     <input ref={inputRef} type="text" value={query} onChange={e => setQuery(e.target.value)}
                       onFocus={() => setInputFocused(true)} onBlur={() => setInputFocused(false)}
-                      placeholder="从武大去光谷，顺路找点吃的..."
+                      placeholder="从华中科技大学，去世界城广场，我想喝茶百道，吃寿司，再吃一块蛋糕..."
                       className="flex-1 bg-transparent text-[15px] text-ink-900 placeholder:text-ink-300 outline-none"
                       disabled={loading} aria-label="输入你的行程需求"/>
                     <button type="submit" disabled={!query.trim() || loading}
@@ -1280,8 +1392,10 @@
       const [toastMsg, setToastMsg] = useState('');
       useEffect(() => { setMounted(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }, []);
       const { plan } = result;
-      const { summary, route_overview, pois } = plan;
-      const totalSaved = pois.reduce((sum, poi) => sum + poi.deals.reduce((s, d) => s + ((d.original_price || d.price) - d.price), 0), 0);
+      const summary = plan.summary || { origin: {}, destination: {}, total_distance_km: 0, total_time_min: 0, total_cost: 0 };
+      const route_overview = plan.route_overview || { waypoints: [], segments: [], polyline: [] };
+      const pois = plan.pois || [];
+      const totalSaved = pois.reduce((sum, poi) => sum + (poi.deals || []).reduce((s, d) => s + ((d.original_price || d.price) - d.price), 0), 0);
 
       const handleShare = () => {
         if (navigator.share) {
@@ -1302,7 +1416,7 @@
           <div className="max-w-2xl mx-auto px-4 pt-4 space-y-5">
             {/* Map */}
             <section className={`transition-all duration-600 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
-              <MapView waypoints={route_overview.waypoints} segments={route_overview.segments}/>
+              <MapView waypoints={route_overview.waypoints} polyline={route_overview.polyline} segments={route_overview.segments}/>
             </section>
 
             {/* Summary (receipt style) */}
@@ -1329,7 +1443,7 @@
                 </div>
                 <div className="relative text-right text-sm opacity-70">
                   <div>{pois.length} 个推荐点</div>
-                  <div>{pois.reduce((s, p) => s + p.deals.length, 0)} 个团购</div>
+                  <div>{pois.reduce((s, p) => s + (p.deals || []).length, 0)} 个团购</div>
                 </div>
               </div>
             )}
@@ -1407,16 +1521,25 @@
       const [state, setState] = useState('idle');
       const [result, setResult] = useState(null);
       const [error, setError] = useState(null);
+      const [currentLocation, setCurrentLocation] = useState(null);
+
+      useEffect(() => {
+        let cancelled = false;
+        getBrowserLocation().then(location => {
+          if (!cancelled && location) setCurrentLocation(location);
+        });
+        return () => { cancelled = true; };
+      }, []);
 
       const handleSearch = useCallback(async (query, preferences) => {
         setState('loading');
         setError(null);
         try {
-          const data = await submitPlan({ userQuery: query, travelMode: 'walking', preferences });
+          const data = await submitPlan({ userQuery: query, travelMode: 'walking', preferences, currentLocation });
           if (data.success) { setResult(data); setState('result'); }
           else { setError(data.message || '规划失败，请重试'); setState('error'); }
         } catch (err) { setError(err.message || '网络错误，请检查后重试'); setState('error'); }
-      }, []);
+      }, [currentLocation]);
 
       const handleBack = useCallback(() => { setState('idle'); setResult(null); setError(null); }, []);
       const handleRetry = useCallback(() => { setState('idle'); setError(null); }, []);

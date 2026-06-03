@@ -17,7 +17,7 @@ class Settings:
     def __init__(self) -> None:
         self.app_name = "route-deals-backend"
         # Support both DATABASE_URL (for MVP SQLite) and PostgreSQL config
-        self.database_url = os.getenv("DATABASE_URL")
+        self.database_url = os.getenv("DATABASE_URL", "sqlite:///./alongway_mvp.db")
         self.postgres_host = os.getenv("POSTGRES_HOST", "localhost")
         self.postgres_port = int(os.getenv("POSTGRES_PORT", "5432"))
         self.postgres_db = os.getenv("POSTGRES_DB")
@@ -27,7 +27,10 @@ class Settings:
         # MVP Agent service config
         self.agent_service_url = os.getenv("AGENT_SERVICE_URL", "http://localhost:8001")
         self.agent_service_timeout = int(os.getenv("AGENT_SERVICE_TIMEOUT", "180"))
-        self.amap_key = os.getenv("AMAP_KEY", "").strip()
+        self.amap_key = os.getenv(
+            "AMAP_KEY", "913efea4bc17530034d7db2db3d46903"
+        ).strip()
+        self.amap_js_key = os.getenv("AMAP_JS_KEY", "").strip() or self.amap_key
         self.amap_base_url = _normalize_amap_base_url(
             os.getenv("AMAP_BASE_URL", "https://restapi.amap.com")
         )

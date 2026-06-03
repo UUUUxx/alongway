@@ -69,15 +69,15 @@ class PlanScorer:
             "open_score": 0.05,
         }
         if preferences.prefer_less_detour:
-            weights["detour_score"] += 0.15
+            weights["detour_score"] += 0.45
         if preferences.prefer_low_price:
-            weights["price_score"] += 0.45
+            weights["price_score"] += 0.80
         if preferences.prefer_high_rating:
-            weights["rating_score"] += 0.15
+            weights["rating_score"] += 0.65
         if preferences.prefer_high_sales:
-            weights["sales_score"] += 0.15
+            weights["sales_score"] += 0.65
         if preferences.prefer_fast_arrival:
-            weights["time_score"] += 0.15
+            weights["time_score"] += 0.45
 
         total = sum(weights.values())
         return {key: value / total for key, value in weights.items()}

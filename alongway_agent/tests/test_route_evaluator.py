@@ -135,3 +135,52 @@ def test_route_evaluator_returns_best_candidate_when_constraints_are_too_strict(
 
     assert result.plans
     assert result.relaxed_constraints_used is True
+
+
+def test_route_evaluator_filters_pois_after_destination() -> None:
+    start = Location(name="Start", longitude=114.0, latitude=30.0)
+    end = Location(name="End", longitude=114.01, latitude=30.0)
+    after_end_poi = POI(
+        poi_id="poi_after_end",
+        name="Past Destination",
+        type="food",
+        longitude=114.02,
+        latitude=30.0,
+        source_keyword="food",
+    )
+    task = TaskSpec(
+        task_id="task_1",
+        type=TaskType.EAT_MEAL,
+        raw_text="food",
+        source_keywords=["food"],
+        category="food",
+    )
+    request = PlanRequest(
+        request_id="req_after_end",
+        user_query="find food",
+        constraints=PlanConstraints(max_detour_meters=10_000, max_extra_time_minutes=120),
+    )
+    evaluator = RouteEvaluator(FailingRouteBackend())
+
+    result = asyncio.run(
+        evaluator.evaluate(
+            request=request,
+            start=start,
+            end=end,
+            tasks=[task],
+            candidates_by_task={
+                task.task_id: [
+                    EnrichedCandidate(
+                        task_id=task.task_id,
+                        task_type=task.type,
+                        poi=after_end_poi,
+                    )
+                ]
+            },
+            base_route=RouteResult(distance_meters=1000, duration_minutes=10, polyline=[]),
+            timeout_seconds=0.1,
+            use_real_route=False,
+        )
+    )
+
+    assert result.plans == []

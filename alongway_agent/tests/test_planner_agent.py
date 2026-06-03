@@ -87,7 +87,17 @@ def test_planner_agent_falls_back_and_uses_current_location() -> None:
     response = asyncio.run(agent.plan(request))
 
     assert response.success is True
-    assert "LLM_FALLBACK_USED" in response.warnings
+    assert "LLM_FALLBACK_USED" not in response.warnings
     assert response.selected_plan is not None
     assert response.selected_plan.stops[0].name == "学生宿舍"
     assert response.selected_plan.stops[-1].name == "图书馆"
+
+
+def test_search_center_prefers_destination_for_low_detour() -> None:
+    start = Location(name="华中科技大学", longitude=114.4148, latitude=30.5159)
+    end = Location(name="世界城广场", longitude=114.4036, latitude=30.5068)
+
+    center = PlanAgent._search_center(start, end, prefer_destination=True)
+
+    assert center.longitude == end.longitude
+    assert center.latitude == end.latitude

@@ -200,22 +200,37 @@ class IntentParser:
                 )
             )
 
-        drink_pos = self._first_keyword_position(
-            user_query, [
-                "星巴克", "瑞幸", "幸运咖", "奶茶", "饮品", "咖啡", "喝的",
-                "买杯喝的", "冷饮", "搞杯喝的", "整点喝的", "果茶", "酸奶",
-                "coffee", "Coffee", "tea", "drink", "bubble tea",
-            ]
-        )
-        if drink_pos is not None:
-            specific_place = self._extract_specific_brand(
-                user_query,
+        drink_specs = [
+            (
                 ["星巴克", "瑞幸", "幸运咖", "茶百道", "喜茶", "蜜雪冰城", "古茗", "益禾堂"],
+                None,
+            ),
+            (
+                ["咖啡", "coffee", "Coffee"],
+                ["咖啡", "饮品"],
+            ),
+            (
+                ["奶茶", "果茶", "酸奶", "bubble tea"],
+                ["奶茶", "饮品", "茶饮"],
+            ),
+            (
+                ["饮品", "喝的", "买杯喝的", "冷饮", "搞杯喝的", "整点喝的", "tea", "drink"],
+                ["奶茶", "饮品", "咖啡"],
+            ),
+        ]
+        for raw_keywords, source_keywords in drink_specs:
+            drink_pos = self._first_keyword_position(user_query, raw_keywords)
+            if drink_pos is None:
+                continue
+            specific_place = (
+                self._extract_specific_brand(user_query, raw_keywords)
+                if source_keywords is None
+                else None
             )
             keywords = (
-                [specific_place, "咖啡", "饮品"]
+                [specific_place, "奶茶", "饮品"]
                 if specific_place
-                else ["奶茶", "饮品", "咖啡"]
+                else source_keywords or ["奶茶", "饮品", "咖啡"]
             )
             detected_tasks.append(
                 (
@@ -237,18 +252,76 @@ class IntentParser:
                 )
             )
 
+        food_specs = [
+            (
+                ["韩餐", "韩国料理"],
+                ["韩餐", "韩国料理"],
+            ),
+            (
+                ["甜品", "甜点", "蛋糕", "面包", "烘焙"],
+                ["甜品", "甜点", "面包", "蛋糕"],
+            ),
+            (
+                ["烤鱼"],
+                ["烤鱼", "烧烤", "烤肉"],
+            ),
+            (
+                ["烧烤", "烤肉"],
+                ["烧烤", "烤肉"],
+            ),
+            (
+                ["火锅"],
+                ["火锅"],
+            ),
+            (
+                ["日料", "日本料理", "寿司", "拉面"],
+                ["日料", "日本料理", "寿司"],
+            ),
+            (
+                ["面条", "饺子", "炸鸡"],
+                ["快餐", "小吃", "餐厅"],
+            ),
+            (
+                ["水果", "果切"],
+                ["水果", "鲜果", "果切", "便利店"],
+            ),
+            (
+                ["便利店", "超市"],
+                ["便利店", "超市"],
+            ),
+        ]
+        specific_food_detected = False
+        for raw_keywords, source_keywords in food_specs:
+            food_pos = self._first_keyword_position(user_query, raw_keywords)
+            if food_pos is None:
+                continue
+            specific_food_detected = True
+            detected_tasks.append(
+                (
+                    food_pos,
+                    TaskSpec(
+                        task_id="pending",
+                        type=TaskType.EAT_MEAL,
+                        raw_text=self._raw_text(user_query, food_pos, raw_keywords),
+                        source_keywords=source_keywords,
+                        category="food",
+                        budget=effective_budget,
+                    ),
+                )
+            )
+
         meal_pos = self._first_keyword_position(
             user_query, [
                 "韩餐", "韩国料理", "吃饭", "吃的", "找点吃", "整点吃的",
                 "午饭", "晚饭", "小吃", "快餐", "食堂", "餐厅",
                 "甜品", "甜点", "蛋糕", "面包", "烘焙",
-                "烧烤", "烤肉", "火锅", "日料", "日本料理", "寿司", "拉面", "面条", "饺子", "炸鸡",
+                "烤鱼", "烧烤", "烤肉", "火锅", "日料", "日本料理", "寿司", "拉面", "面条", "饺子", "炸鸡",
                 "水果", "果切", "便利店", "超市",
                 # Basic English
                 "coffee", "Coffee", "food", "Food", "eat", "drink", "tea",
             ]
         )
-        if meal_pos is not None:
+        if meal_pos is not None and not specific_food_detected:
             specific_place = None
             # Map subcategories to appropriate search keywords
             if any(word in user_query for word in ["韩餐", "韩国料理"]):
@@ -257,9 +330,9 @@ class IntentParser:
             elif any(word in user_query for word in ["甜品", "甜点", "蛋糕", "面包", "烘焙"]):
                 keywords = ["甜品", "甜点", "面包", "蛋糕"]
                 raw_keywords = ["甜品", "甜点", "蛋糕", "面包", "烘焙"]
-            elif any(word in user_query for word in ["烧烤", "烤肉"]):
-                keywords = ["烧烤", "烤肉", "餐厅"]
-                raw_keywords = ["烧烤", "烤肉"]
+            elif any(word in user_query for word in ["烤鱼", "烧烤", "烤肉"]):
+                keywords = ["烤鱼", "烧烤", "烤肉"]
+                raw_keywords = ["烤鱼", "烧烤", "烤肉"]
             elif any(word in user_query for word in ["火锅"]):
                 keywords = ["火锅", "餐厅"]
                 raw_keywords = ["火锅"]
@@ -297,9 +370,9 @@ class IntentParser:
                 )
             )
 
-        # ── Life services: 理发/美发, 打印/复印, 药店 ──
+        # ── Life services: 理发/美发, 美甲, 打印/复印, 药店 ──
         life_pos = self._first_keyword_position(
-            user_query, ["理发", "理个发", "美发", "剪头", "剪发", "烫头", "做头发"]
+            user_query, ["理发", "理个发", "美发", "剪头", "剪发", "剪个头发", "烫头", "做头发"]
         )
         if life_pos is not None:
             detected_tasks.append((
@@ -307,9 +380,24 @@ class IntentParser:
                 TaskSpec(
                     task_id="pending",
                     type=TaskType.CUSTOM,
-                    raw_text=self._raw_text(user_query, life_pos, ["理发", "美发", "剪头", "剪发", "烫头"]),
-                    source_keywords=["美发", "理发", "沙龙"],
-                    category="life",
+                    raw_text=self._raw_text(user_query, life_pos, ["理发", "美发", "剪头", "剪发", "剪个头发", "烫头"]),
+                    source_keywords=["理发店", "美发", "发型设计", "沙龙"],
+                    category="hair",
+                ),
+            ))
+
+        nail_pos = self._first_keyword_position(
+            user_query, ["美甲", "做指甲", "修甲", "甲片", "穿戴甲"]
+        )
+        if nail_pos is not None:
+            detected_tasks.append((
+                nail_pos,
+                TaskSpec(
+                    task_id="pending",
+                    type=TaskType.CUSTOM,
+                    raw_text=self._raw_text(user_query, nail_pos, ["美甲", "做指甲", "修甲", "甲片", "穿戴甲"]),
+                    source_keywords=["美甲店", "美甲", "美睫美甲"],
+                    category="nail",
                 ),
             ))
 
@@ -359,26 +447,46 @@ class IntentParser:
                 ),
             ))
 
-        entertainment_pos = self._first_keyword_position(
-            user_query, [
-                "娱乐", "电影", "电影院", "桌游", "棋牌", "密室", "KTV", "ktv",
-                "玩密室", "看电影", "唱歌",
-            ]
-        )
-        if entertainment_pos is not None:
+        entertainment_specs = [
+            (
+                ["看场电影", "看电影", "电影", "电影院", "影城", "影院"],
+                ["电影院", "影城", "影院", "电影票"],
+                "movie",
+            ),
+            (
+                ["桌游", "桌游店", "桌游吧", "剧本杀"],
+                ["桌游店", "桌游吧", "桌游", "剧本杀"],
+                "board_game",
+            ),
+            (
+                ["棋牌", "棋牌室", "打牌"],
+                ["棋牌室", "棋牌", "茶楼"],
+                "chess",
+            ),
+            (
+                ["密室", "玩密室", "密室逃脱"],
+                ["密室逃脱", "密室"],
+                "escape_room",
+            ),
+            (
+                ["KTV", "ktv", "唱歌"],
+                ["KTV", "量贩KTV", "唱歌"],
+                "ktv",
+            ),
+        ]
+        for raw_keywords, source_keywords, category in entertainment_specs:
+            entertainment_pos = self._first_keyword_position(user_query, raw_keywords)
+            if entertainment_pos is None:
+                continue
             detected_tasks.append(
                 (
                     entertainment_pos,
                     TaskSpec(
                         task_id="pending",
                         type=TaskType.CUSTOM,
-                        raw_text=self._raw_text(
-                            user_query,
-                            entertainment_pos,
-                            ["娱乐", "电影", "电影院", "桌游", "棋牌", "密室", "KTV", "ktv"],
-                        ),
-                        source_keywords=["娱乐", "电影院", "桌游", "棋牌", "密室", "KTV"],
-                        category="entertainment",
+                        raw_text=self._raw_text(user_query, entertainment_pos, raw_keywords),
+                        source_keywords=source_keywords,
+                        category=category,
                     ),
                 )
             )
@@ -424,7 +532,7 @@ class IntentParser:
             user_query,
         )
         if match:
-            start = match.group("start").strip(" 我")
+            start = IntentParser._clean_place_text(match.group("start"))
             end = match.group("end").strip()
             return start or None, end or None
 
@@ -448,7 +556,7 @@ class IntentParser:
             ]
             if separator_positions:
                 sep_pos, separator = min(separator_positions, key=lambda item: item[0])
-                start = user_query[start_from:sep_pos].strip(" 我")
+                start = IntentParser._clean_place_text(user_query[start_from:sep_pos])
                 end_start = sep_pos + len(separator)
                 end_stop = len(user_query)
                 for mark in end_marks:
@@ -471,6 +579,12 @@ class IntentParser:
                 if end:
                     return None, end
         return None, None
+
+    @staticmethod
+    def _clean_place_text(value: str) -> str:
+        text = value.strip(" 我，,。；; ")
+        text = re.sub(r"(?:出发|出门|开始)\s*[，,。；;、]*$", "", text)
+        return text.strip(" 我，,。；;、 ")
 
     @staticmethod
     def _first_keyword_position(

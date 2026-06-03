@@ -113,8 +113,8 @@ def _build_frontend_plan(
         _location_fallback(request.end_location),
     )
     poi_stops = [
-        stop
-        for stop in stops
+        (index, stop)
+        for index, stop in enumerate(stops)
         if stop.get("stop_type") not in {"start", "end"} and stop.get("poi")
     ]
 
@@ -134,6 +134,7 @@ def _build_frontend_plan(
         },
         "route_overview": {
             "waypoints": [_to_waypoint(stop, index) for index, stop in enumerate(stops)],
+            "polyline": route.get("polyline") or [],
             "segments": [
                 {
                     "from": index,
@@ -145,7 +146,17 @@ def _build_frontend_plan(
                 for index, segment in enumerate(route_segments)
             ],
         },
-        "pois": [_to_frontend_poi(stop, selected_plan) for stop in poi_stops],
+        "pois": [
+            _to_frontend_poi(
+                stop=stop,
+                selected_plan=selected_plan,
+                stop_index=stop_index,
+                stops=stops,
+                route_segments=route_segments,
+                travel_mode=request.travel_mode,
+            )
+            for stop_index, stop in poi_stops
+        ],
         "agent": {
             "summary": agent_data.get("summary"),
             "alternative_plans": agent_data.get("alternative_plans") or [],
@@ -198,11 +209,21 @@ def _segment_instruction(segment: dict[str, Any]) -> str:
 def _to_frontend_poi(
     stop: dict[str, Any],
     selected_plan: dict[str, Any],
+    stop_index: int,
+    stops: list[dict[str, Any]],
+    route_segments: list[dict[str, Any]],
+    travel_mode: str,
 ) -> dict[str, Any]:
     poi = stop.get("poi") or {}
     location = stop.get("location") or {}
     deal = stop.get("deal")
     deals = [deal] if deal else []
+    detour = _stop_marginal_detour(
+        stop_index=stop_index,
+        stops=stops,
+        route_segments=route_segments,
+        travel_mode=travel_mode,
+    )
     return {
         "poi_id": poi.get("poi_id") or stop.get("task_id") or stop.get("name"),
         "name": poi.get("name") or stop.get("name"),
@@ -212,14 +233,72 @@ def _to_frontend_poi(
         "latitude": poi.get("latitude") or location.get("latitude"),
         "rating": poi.get("rating"),
         "cost": poi.get("cost"),
-        "detour_meters": selected_plan.get("detour_distance_meters"),
-        "detour_time_min": selected_plan.get("extra_time_minutes"),
+        "detour_meters": detour["meters"],
+        "detour_time_min": detour["minutes"],
         "recommend_score": selected_plan.get("score"),
         "recommend_reason": stop.get("reason")
         or selected_plan.get("recommendation_reason")
-        or "顺路候选点",
+        or "真实顺路 POI",
         "deals": deals,
     }
+
+
+def _stop_marginal_detour(
+    stop_index: int,
+    stops: list[dict[str, Any]],
+    route_segments: list[dict[str, Any]],
+    travel_mode: str,
+) -> dict[str, int]:
+    if stop_index <= 0 or stop_index >= len(stops) - 1:
+        return {"meters": 0, "minutes": 0}
+
+    prev_location = (stops[stop_index - 1] or {}).get("location") or {}
+    next_location = (stops[stop_index + 1] or {}).get("location") or {}
+    direct_distance = _distance_between_locations(prev_location, next_location)
+    if direct_distance is None:
+        return {"meters": None, "minutes": None}
+
+    inbound = route_segments[stop_index - 1] if stop_index - 1 < len(route_segments) else {}
+    outbound = route_segments[stop_index] if stop_index < len(route_segments) else {}
+    actual_distance = (inbound.get("distance_meters") or 0) + (outbound.get("distance_meters") or 0)
+    actual_minutes = (inbound.get("duration_minutes") or 0) + (outbound.get("duration_minutes") or 0)
+    direct_minutes = direct_distance / _speed_meters_per_minute(travel_mode)
+
+    return {
+        "meters": max(0, int(round(actual_distance - direct_distance))),
+        "minutes": max(0, int(round(actual_minutes - direct_minutes))),
+    }
+
+
+def _distance_between_locations(a: dict[str, Any], b: dict[str, Any]) -> float | None:
+    try:
+        lon1 = float(a.get("longitude"))
+        lat1 = float(a.get("latitude"))
+        lon2 = float(b.get("longitude"))
+        lat2 = float(b.get("latitude"))
+    except (TypeError, ValueError):
+        return None
+
+    import math
+
+    earth_radius = 6_371_000
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+    value = (
+        math.sin(delta_phi / 2) ** 2
+        + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2) ** 2
+    )
+    return earth_radius * 2 * math.atan2(math.sqrt(value), math.sqrt(1 - value))
+
+
+def _speed_meters_per_minute(travel_mode: str) -> float:
+    return {
+        "walking": 75.0,
+        "bicycling": 180.0,
+        "driving": 420.0,
+    }.get(travel_mode, 75.0)
 
 
 def _display_type(value: Any) -> str:
@@ -227,5 +306,10 @@ def _display_type(value: Any) -> str:
         "drink": "饮品",
         "express": "快递",
         "food": "餐饮",
+        "movie": "电影",
+        "board_game": "桌游",
+        "hair": "理发",
+        "nail": "美甲",
+        "entertainment": "娱乐",
         "study": "学习",
     }.get(str(value), str(value or "推荐"))

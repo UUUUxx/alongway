@@ -28,7 +28,21 @@ KEYWORD_SYNONYMS = {
     "取件": ["快递", "快递站", "取件柜"],
     "打印": ["复印", "彩印", "证件照"],
     "韩餐": ["韩国料理", "餐厅", "吃饭"],
-    "娱乐": ["电影院", "桌游", "棋牌", "密室", "KTV"],
+    "烤鱼": ["鱼火锅"],
+    "烧烤": ["烤肉"],
+    "烤肉": ["烧烤"],
+    "火锅": ["涮锅"],
+    "日料": ["日本料理", "寿司"],
+    "寿司": ["日料", "日本料理"],
+    "电影": ["电影院", "影城", "影院", "电影票"],
+    "电影院": ["影城", "影院", "电影"],
+    "桌游": ["桌游店", "桌游吧", "剧本杀"],
+    "桌游店": ["桌游", "桌游吧", "剧本杀"],
+    "理发": ["理发店", "美发", "发型设计", "沙龙"],
+    "理发店": ["理发", "美发", "发型设计", "沙龙"],
+    "美甲": ["美甲店", "美睫美甲", "做指甲"],
+    "美甲店": ["美甲", "美睫美甲", "做指甲"],
+    "娱乐": ["电影院", "影城", "桌游店", "棋牌室", "密室逃脱", "KTV"],
 }
 
 
@@ -123,16 +137,6 @@ def search_pois(
         _upsert_pois(db, amap_pois, source="amap")
         poi_responses.extend(amap_pois)
 
-    if not poi_responses and center is not None:
-        mock_pois = _mock_pois_near_center(
-            keywords=source_keywords,
-            specific_place_name=specific_place_name,
-            center=center,
-            limit=limit,
-        )
-        _upsert_pois(db, mock_pois, source="mock")
-        poi_responses.extend(mock_pois)
-
     log_call(
         "backend.internal_pois.search.result",
         request={
@@ -160,6 +164,9 @@ def _matches_poi(
     text = f"{poi.name} {poi.address or ''} {poi.location or ''} {poi.type or ''} {poi.source_keyword}".lower()
     if specific_place_name:
         return specific_place_name.lower() in text
+    significant_keywords = _significant_keywords(keywords)
+    if significant_keywords:
+        return any(keyword.lower() in text for keyword in significant_keywords)
     return any(keyword.lower() in text or text in keyword.lower() for keyword in keywords)
 
 
@@ -242,6 +249,8 @@ def _search_amap_pois(
         name = item.get("name") or search_keyword
         if name in existing_names:
             continue
+        if not _matches_amap_item(item, keywords, specific_place_name):
+            continue
         location = item.get("location") or ""
         if "," not in location:
             continue
@@ -282,6 +291,85 @@ def _search_amap_pois(
     return results
 
 
+def _matches_amap_item(
+    item: dict,
+    keywords: list[str],
+    specific_place_name: Optional[str],
+) -> bool:
+    text = _amap_item_text(item)
+    if specific_place_name:
+        return specific_place_name.lower() in text
+    significant_keywords = _significant_keywords(set(keywords))
+    if not significant_keywords:
+        return True
+    return any(keyword.lower() in text for keyword in significant_keywords)
+
+
+def _amap_item_text(item: dict) -> str:
+    fields = [
+        item.get("name"),
+        item.get("type"),
+        item.get("address"),
+        item.get("tag"),
+        item.get("keytag"),
+        item.get("atag"),
+    ]
+    biz_ext = item.get("biz_ext") or {}
+    if isinstance(biz_ext, dict):
+        fields.extend([biz_ext.get("tag"), biz_ext.get("cost")])
+    return " ".join(str(value) for value in fields if value not in (None, "", [])).lower()
+
+
+def _significant_keywords(keywords: set[str]) -> set[str]:
+    generic_keywords = {
+        "餐厅",
+        "吃饭",
+        "吃的",
+        "食堂",
+        "小吃",
+        "快餐",
+        "饮品",
+        "茶饮",
+        "娱乐",
+        "商场",
+    }
+    strict_roots = {
+        "烧烤",
+        "烤肉",
+        "烤鱼",
+        "韩餐",
+        "韩国料理",
+        "火锅",
+        "日料",
+        "日本料理",
+        "寿司",
+        "蛋糕",
+        "甜品",
+        "甜点",
+        "面包",
+        "奶茶",
+        "咖啡",
+        "理发",
+        "理发店",
+        "美发",
+        "美甲",
+        "美甲店",
+        "电影院",
+        "影城",
+        "影院",
+        "桌游",
+        "桌游店",
+        "KTV",
+    }
+    expanded = set()
+    for keyword in keywords:
+        if keyword in generic_keywords:
+            continue
+        if keyword in strict_roots:
+            expanded.update(get_keyword_matches(keyword))
+    return {keyword for keyword in expanded if keyword not in generic_keywords}
+
+
 def _parse_float(value: object) -> Optional[float]:
     try:
         if value in (None, "", "[]"):
@@ -295,50 +383,41 @@ def _infer_type(keywords: list[str], specific_place_name: Optional[str]) -> str:
     text = " ".join([specific_place_name or "", *keywords])
     if any(word in text for word in ["咖啡", "奶茶", "饮品", "星巴克", "瑞幸"]):
         return "drink"
-    if any(word in text for word in ["韩餐", "韩国料理", "餐厅", "吃饭", "食堂"]):
+    if any(
+        word in text
+        for word in [
+            "韩餐",
+            "韩国料理",
+            "烧烤",
+            "烤肉",
+            "烤鱼",
+            "火锅",
+            "日料",
+            "日本料理",
+            "寿司",
+            "蛋糕",
+            "甜品",
+            "甜点",
+            "面包",
+            "餐厅",
+            "吃饭",
+            "食堂",
+        ]
+    ):
         return "food"
     if any(word in text for word in ["快递", "驿站", "菜鸟", "取件"]):
         return "express"
-    if any(word in text for word in ["电影", "娱乐", "桌游", "KTV", "密室"]):
+    if any(word in text for word in ["电影", "电影院", "影城", "影院"]):
+        return "movie"
+    if any(word in text for word in ["桌游", "桌游店", "桌游吧", "剧本杀"]):
+        return "board_game"
+    if any(word in text for word in ["理发", "理发店", "美发", "发型设计", "沙龙"]):
+        return "hair"
+    if any(word in text for word in ["美甲", "美甲店", "美睫美甲", "做指甲"]):
+        return "nail"
+    if any(word in text for word in ["娱乐", "KTV", "密室", "棋牌"]):
         return "entertainment"
     return "custom"
-
-
-def _mock_pois_near_center(
-    keywords: list[str],
-    specific_place_name: Optional[str],
-    center: Point,
-    limit: int,
-) -> list[POIResponse]:
-    poi_type = _infer_type(keywords, specific_place_name)
-    keyword = specific_place_name or (keywords[0] if keywords else "顺路点")
-    templates = {
-        "food": [("顺路简餐", 18.0), ("附近小吃", 12.0), ("校园餐厅", 22.0)],
-        "drink": [("顺路咖啡", 24.0), ("附近饮品", 16.0), ("咖啡小站", 28.0)],
-        "express": [("附近菜鸟驿站", None), ("顺路快递柜", None)],
-        "entertainment": [("顺路娱乐点", 38.0), ("附近桌游", 35.0)],
-        "custom": [(f"{keyword}候选点", None)],
-    }
-    results = []
-    for index, (name, cost) in enumerate(templates.get(poi_type, templates["custom"])[:limit], start=1):
-        lon = center.longitude + 0.001 * index
-        lat = center.latitude + 0.0007 * index
-        results.append(
-            POIResponse(
-                poi_id=f"mock_{hashlib.md5((keyword + str(index)).encode('utf-8')).hexdigest()[:12]}",
-                name=specific_place_name or name,
-                type=poi_type,
-                address="高德无结果时生成的临时演示候选",
-                location=f"{lon:.6f},{lat:.6f}",
-                longitude=lon,
-                latitude=lat,
-                rating=4.2,
-                cost=cost,
-                source_keyword=keyword,
-                distance_meters=haversine_distance_meters(center.longitude, center.latitude, lon, lat),
-            )
-        )
-    return results
 
 
 def _upsert_pois(db: Session, poi_responses: list[POIResponse], source: str) -> None:

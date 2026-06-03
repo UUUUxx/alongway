@@ -6,6 +6,7 @@ from app.routers import (
     internal_deals,
     internal_pois,
     internal_route,
+    map_config,
     plan,
     poi_admin,
 )
@@ -18,6 +19,7 @@ __all__ = [
     "internal_deals",
     "internal_pois",
     "internal_route",
+    "map_config",
     "plan",
     "poi_admin",
 ]

@@ -93,3 +93,20 @@ def test_geocode_uses_local_fallback_for_wuda_without_amap_key(monkeypatch):
     data = response.json()
     assert data["success"] is True
     assert data["results"][0]["name"] == "武汉大学"
+
+
+def test_geocode_uses_local_fallback_for_hust_and_world_city(monkeypatch):
+    class SettingsWithoutKey(_Settings):
+        amap_key = ""
+
+    monkeypatch.setattr("app.routers.geocode.get_settings", lambda: SettingsWithoutKey())
+
+    hust_response = client.post("/api/geocode", json={"address": "华科", "city": "武汉"})
+    world_city_response = client.post("/api/geocode", json={"address": "世界城广场", "city": "武汉"})
+
+    hust_data = hust_response.json()
+    world_city_data = world_city_response.json()
+    assert hust_data["success"] is True
+    assert hust_data["results"][0]["name"] == "华中科技大学"
+    assert world_city_data["success"] is True
+    assert world_city_data["results"][0]["name"] == "世界城广场"

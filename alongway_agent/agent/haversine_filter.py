@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from agent.models import EnrichedCandidate, Location
+from agent.models import UserPreferences
 
 
 @dataclass
@@ -41,6 +42,7 @@ class HaversinePreFilter:
         start: Location,
         end: Location,
         candidates_by_task: dict[str, list[EnrichedCandidate]],
+        preferences: Optional[UserPreferences] = None,
     ) -> dict[str, list[FilteredCandidate]]:
         """
         Pre-filter candidates for each task.
@@ -83,11 +85,29 @@ class HaversinePreFilter:
                     direct_distance_meters=d1 + d2,
                 ))
 
-            # Sort by estimated detour (ascending)
-            scored.sort(key=lambda x: (x.detour_approx_meters, x.direct_distance_meters))
+            scored.sort(key=lambda x: self._sort_key(x, preferences))
             filtered[task_id] = scored[:self.top_k]
 
         return filtered
+
+    @staticmethod
+    def _sort_key(item: FilteredCandidate, preferences: Optional[UserPreferences]) -> tuple[float, float, float, float, float]:
+        candidate = item.candidate
+        price = candidate.deal.price if candidate.deal else candidate.poi.cost
+        rating = candidate.deal.rating if candidate.deal and candidate.deal.rating is not None else candidate.poi.rating
+        sales = candidate.deal.monthly_sales if candidate.deal and candidate.deal.monthly_sales is not None else 0
+        price_key = price if price is not None else 9999
+        rating_key = -(rating or 0)
+        sales_key = -(sales or 0)
+        detour_key = item.detour_approx_meters
+
+        if preferences and preferences.prefer_low_price:
+            return (price_key, detour_key, rating_key, sales_key, item.direct_distance_meters)
+        if preferences and preferences.prefer_high_rating:
+            return (rating_key, detour_key, price_key, sales_key, item.direct_distance_meters)
+        if preferences and preferences.prefer_high_sales:
+            return (sales_key, detour_key, rating_key, price_key, item.direct_distance_meters)
+        return (detour_key, item.direct_distance_meters, rating_key, price_key, sales_key)
 
     @staticmethod
     def haversine_meters(
