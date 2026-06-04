@@ -25,7 +25,7 @@ class IntentParser:
     def __init__(
         self,
         llm_client: Optional[LLMClient] = None,
-        llm_timeout_seconds: float = 3.0,
+        llm_timeout_seconds: float = 5.0,
         rule_first: bool = True,
         llm_cache: Optional[object] = None,
     ) -> None:
@@ -262,15 +262,15 @@ class IntentParser:
                 ["甜品", "甜点", "面包", "蛋糕"],
             ),
             (
-                ["烤鱼"],
-                ["烤鱼", "烧烤", "烤肉"],
+                ["烤鱼", "鱼火锅", "烤鱼店"],
+                ["烤鱼", "鱼火锅"],
             ),
             (
-                ["烧烤", "烤肉"],
+                ["烧烤", "烤肉", "BBQ"],
                 ["烧烤", "烤肉"],
             ),
             (
-                ["火锅"],
+                ["火锅", "涮锅"],
                 ["火锅"],
             ),
             (
@@ -280,6 +280,18 @@ class IntentParser:
             (
                 ["面条", "饺子", "炸鸡"],
                 ["快餐", "小吃", "餐厅"],
+            ),
+            (
+                ["早餐", "早饭", "早点"],
+                ["早餐", "早点", "小吃"],
+            ),
+            (
+                ["午餐", "中饭", "午饭"],
+                ["简餐", "午餐", "食堂"],
+            ),
+            (
+                ["晚餐", "夜宵", "宵夜"],
+                ["晚餐", "夜宵", "餐厅"],
             ),
             (
                 ["水果", "果切"],
@@ -313,12 +325,15 @@ class IntentParser:
         meal_pos = self._first_keyword_position(
             user_query, [
                 "韩餐", "韩国料理", "吃饭", "吃的", "找点吃", "整点吃的",
-                "午饭", "晚饭", "小吃", "快餐", "食堂", "餐厅",
+                "早餐", "早饭", "早点", "午餐", "中饭", "午饭", "晚餐", "晚饭", "夜宵", "宵夜",
+                "小吃", "快餐", "食堂", "餐厅",
                 "甜品", "甜点", "蛋糕", "面包", "烘焙",
-                "烤鱼", "烧烤", "烤肉", "火锅", "日料", "日本料理", "寿司", "拉面", "面条", "饺子", "炸鸡",
+                "烤鱼", "鱼火锅", "烧烤", "烤肉", "BBQ", "火锅", "涮锅",
+                "日料", "日本料理", "寿司", "拉面", "面条", "饺子", "炸鸡",
                 "水果", "果切", "便利店", "超市",
                 # Basic English
                 "coffee", "Coffee", "food", "Food", "eat", "drink", "tea",
+                "breakfast", "lunch", "dinner",
             ]
         )
         if meal_pos is not None and not specific_food_detected:
@@ -330,15 +345,27 @@ class IntentParser:
             elif any(word in user_query for word in ["甜品", "甜点", "蛋糕", "面包", "烘焙"]):
                 keywords = ["甜品", "甜点", "面包", "蛋糕"]
                 raw_keywords = ["甜品", "甜点", "蛋糕", "面包", "烘焙"]
-            elif any(word in user_query for word in ["烤鱼", "烧烤", "烤肉"]):
-                keywords = ["烤鱼", "烧烤", "烤肉"]
-                raw_keywords = ["烤鱼", "烧烤", "烤肉"]
-            elif any(word in user_query for word in ["火锅"]):
+            elif any(word in user_query for word in ["烤鱼", "鱼火锅"]):
+                keywords = ["烤鱼", "鱼火锅"]
+                raw_keywords = ["烤鱼", "鱼火锅"]
+            elif any(word in user_query for word in ["烧烤", "烤肉", "BBQ"]):
+                keywords = ["烧烤", "烤肉"]
+                raw_keywords = ["烧烤", "烤肉"]
+            elif any(word in user_query for word in ["火锅", "涮锅"]):
                 keywords = ["火锅", "餐厅"]
                 raw_keywords = ["火锅"]
             elif any(word in user_query for word in ["日料", "日本料理", "寿司", "拉面"]):
                 keywords = ["日料", "日本料理", "寿司", "餐厅"]
                 raw_keywords = ["日料", "日本料理", "寿司", "拉面"]
+            elif any(word in user_query for word in ["早餐", "早饭", "早点"]):
+                keywords = ["早餐", "早点", "小吃"]
+                raw_keywords = ["早餐", "早饭", "早点"]
+            elif any(word in user_query for word in ["午餐", "中饭", "午饭"]):
+                keywords = ["简餐", "午餐", "食堂"]
+                raw_keywords = ["午餐", "中饭", "午饭"]
+            elif any(word in user_query for word in ["晚餐", "晚饭", "夜宵", "宵夜"]):
+                keywords = ["晚餐", "夜宵", "餐厅"]
+                raw_keywords = ["晚餐", "晚饭", "夜宵", "宵夜"]
             elif any(word in user_query for word in ["面条", "饺子", "炸鸡"]):
                 keywords = ["快餐", "小吃", "餐厅"]
                 raw_keywords = ["面条", "饺子", "炸鸡"]

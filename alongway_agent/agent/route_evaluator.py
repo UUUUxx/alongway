@@ -243,7 +243,7 @@ class RouteEvaluator:
         if length_squared <= 0:
             return False
         projection = ((px - sx) * dx + (py - sy) * dy) / length_squared
-        return projection > 1.03
+        return projection > 1.20  # Allow POIs slightly past destination for realistic routing
 
     @staticmethod
     def _constraint_overage_key(plan: CandidatePlan, request: PlanRequest) -> tuple[float, float, float]:
@@ -262,6 +262,13 @@ class RouteEvaluator:
         )
         return (detour_over / 1000, time_over / 10, budget_over / 10)
 
+    # Road-network circuity factor: real path ≈ Haversine × factor
+    _CIRCUITY_FACTOR = {
+        "walking": 1.35,
+        "bicycling": 1.25,
+        "driving": 1.30,
+    }
+
     @staticmethod
     def _fallback_route(points: list[Location], travel_mode: str) -> RouteResult:
         speed = {
@@ -269,19 +276,17 @@ class RouteEvaluator:
             "bicycling": 180.0,
             "driving": 420.0,
         }.get(travel_mode, 75.0)
+        circuity = RouteEvaluator._CIRCUITY_FACTOR.get(travel_mode, 1.30)
         total = 0
         segments: list[RouteSegment] = []
         for start, end in zip(points, points[1:]):
-            distance = int(
-                round(
-                    RouteEvaluator._haversine_meters(
-                        start.longitude or 0,
-                        start.latitude or 0,
-                        end.longitude or 0,
-                        end.latitude or 0,
-                    )
-                )
+            haversine_dist = RouteEvaluator._haversine_meters(
+                start.longitude or 0,
+                start.latitude or 0,
+                end.longitude or 0,
+                end.latitude or 0,
             )
+            distance = int(round(haversine_dist * circuity))
             total += distance
             segments.append(
                 RouteSegment(

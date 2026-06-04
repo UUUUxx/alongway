@@ -47,7 +47,7 @@ def create_app() -> FastAPI:
     plan_agent = PlanAgent(
         backend_client=backend_client,
         llm_client=llm_client,
-        llm_timeout_seconds=settings.stepfun_timeout_seconds,
+        llm_timeout_seconds=min(settings.stepfun_timeout_seconds, 5.0),
         poi_timeout_seconds=settings.poi_timeout_seconds,
         route_timeout_seconds=settings.route_timeout_seconds,
         v2_enabled=settings.route_optimization_v2,

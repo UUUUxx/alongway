@@ -218,7 +218,7 @@ def test_rule_parser_splits_fish_ktv_coffee_and_milk_tea() -> None:
     assert result.intent.start_text == "武汉大学"
     assert result.intent.end_text == "群光广场"
     assert [task.category for task in result.intent.tasks] == ["food", "ktv", "drink", "drink"]
-    assert result.intent.tasks[0].source_keywords == ["烤鱼", "烧烤", "烤肉"]
+    assert result.intent.tasks[0].source_keywords == ["烤鱼", "鱼火锅"]
     assert result.intent.tasks[1].source_keywords[0] == "KTV"
     assert result.intent.tasks[2].source_keywords == ["咖啡", "饮品"]
     assert result.intent.tasks[3].source_keywords == ["奶茶", "饮品", "茶饮"]

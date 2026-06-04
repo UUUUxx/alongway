@@ -34,8 +34,16 @@ class HaversinePreFilter:
     expensive Amap route verification.
     """
 
-    def __init__(self, top_k: int = 3) -> None:
+    # Road-network circuity factor for different travel modes
+    _CIRCUITY_FACTOR = {
+        "walking": 1.35,
+        "bicycling": 1.25,
+        "driving": 1.30,
+    }
+
+    def __init__(self, top_k: int = 3, travel_mode: str = "walking") -> None:
         self.top_k = top_k
+        self.circuity = self._CIRCUITY_FACTOR.get(travel_mode, 1.30)
 
     def filter(
         self,
@@ -78,7 +86,10 @@ class HaversinePreFilter:
                     poi.longitude, poi.latitude,
                     end.longitude or 0, end.latitude or 0,
                 )
-                detour = max(0, d1 + d2 - base_dist)
+                # Apply road-network circuity factor for more realistic detour estimate
+                d1_adj = d1 * self.circuity
+                d2_adj = d2 * self.circuity
+                detour = max(0, d1_adj + d2_adj - base_dist * self.circuity)
                 scored.append(FilteredCandidate(
                     candidate=c,
                     detour_approx_meters=detour,

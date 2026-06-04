@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import itertools
 import logging
 import math
 import time
@@ -36,7 +37,7 @@ class PlanAgent:
         self,
         backend_client: Optional[BackendClient] = None,
         llm_client: Optional[LLMClient] = None,
-        llm_timeout_seconds: float = 3.0,
+        llm_timeout_seconds: float = 5.0,
         poi_timeout_seconds: float = 3.0,
         route_timeout_seconds: float = 3.0,
         # ── v2 parameters ──
@@ -218,40 +219,34 @@ class PlanAgent:
             )
             selected_plan = ranked_plans[0]
 
-            # ── v2: Verify selected plan with real Amap route ──
+            # ── v2: Top-N Amap verification with TSP POI reordering ──
             if self.v2_enabled and not use_real_eval:
+                top_n_verify = min(3, len(ranked_plans))  # Verify top 3 plans
                 verify_started = time.perf_counter()
-                verify_points = (
-                    [start]
-                    + [
-                        stop.location
-                        for stop in selected_plan.stops
-                        if stop.stop_type.value in ("task", "deal")
-                    ]
-                    + [end]
+                verified_plans = await self._verify_top_plans_with_amap(
+                    ranked_plans=ranked_plans[:top_n_verify],
+                    start=start,
+                    end=end,
+                    base_route=base_route,
+                    travel_mode=request.travel_mode,
+                    preferences=intent.preferences,
+                    timeout_seconds=self.route_timeout_seconds,
                 )
-                verify_timeout = self.route_timeout_seconds
-                try:
-                    real_route = await asyncio.wait_for(
-                        self.backend_client.calculate_route(
-                            verify_points, request.travel_mode
-                        ),
-                        timeout=verify_timeout,
+                metrics.amap_route_total_ms += int(
+                    (time.perf_counter() - verify_started) * 1000
+                )
+                # Re-rank verified plans by real Amap distance + preferences
+                if verified_plans:
+                    verified_plans.sort(
+                        key=lambda p: (p.detour_distance_meters, p.estimated_cost)
                     )
-                    selected_plan.route = real_route
-                    # Recalculate detour and extra time
-                    selected_plan.detour_distance_meters = max(
-                        0, real_route.distance_meters - base_route.distance_meters
+                    selected_plan = verified_plans[0]
+                    # Merge verified plans back: replace top N with verified, keep rest
+                    verified_ids = {p.plan_id for p in verified_plans}
+                    ranked_plans = (
+                        verified_plans
+                        + [p for p in ranked_plans if p.plan_id not in verified_ids]
                     )
-                    selected_plan.extra_time_minutes = round(
-                        max(0.0, real_route.duration_minutes - base_route.duration_minutes), 1
-                    )
-                    metrics.amap_route_calls_count += len(verify_points) - 1
-                    metrics.amap_route_total_ms += int(
-                        (time.perf_counter() - verify_started) * 1000
-                    )
-                except Exception:
-                    pass  # Keep Haversine route if Amap fails
             alternative_plans = [
                 self._to_alternative_summary(plan) for plan in ranked_plans[1:4]
             ]
@@ -411,6 +406,13 @@ class PlanAgent:
         except Exception:
             return self._fallback_route(points, travel_mode)
 
+    # Road-network circuity factor: real path ≈ Haversine × factor
+    _CIRCUITY_FACTOR = {
+        "walking": 1.35,
+        "bicycling": 1.25,
+        "driving": 1.30,
+    }
+
     @staticmethod
     def _fallback_route(points: list[Location], travel_mode: str) -> RouteResult:
         speed = {
@@ -418,19 +420,17 @@ class PlanAgent:
             "bicycling": 180.0,
             "driving": 420.0,
         }.get(travel_mode, 75.0)
+        circuity = PlanAgent._CIRCUITY_FACTOR.get(travel_mode, 1.30)
         total = 0
         segments: list[RouteSegment] = []
         for start, end in zip(points, points[1:]):
-            distance = int(
-                round(
-                    PlanAgent._haversine_meters(
-                        start.longitude or 0,
-                        start.latitude or 0,
-                        end.longitude or 0,
-                        end.latitude or 0,
-                    )
-                )
+            haversine_dist = PlanAgent._haversine_meters(
+                start.longitude or 0,
+                start.latitude or 0,
+                end.longitude or 0,
+                end.latitude or 0,
             )
+            distance = int(round(haversine_dist * circuity))
             total += distance
             segments.append(
                 RouteSegment(
@@ -463,6 +463,102 @@ class PlanAgent:
             + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2) ** 2
         )
         return earth_radius * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+    async def _verify_top_plans_with_amap(
+        self,
+        ranked_plans: list,
+        start: Location,
+        end: Location,
+        base_route,
+        travel_mode: str,
+        preferences,
+        timeout_seconds: float,
+    ) -> list:
+        """Verify top-N plans with real Amap routes, trying TSP-optimized POI orders."""
+        verified = []
+        deadline = time.perf_counter() + timeout_seconds
+        for plan in ranked_plans:
+            remaining = deadline - time.perf_counter()
+            if remaining <= 1.0:
+                break  # No time left for more verification
+            poi_locations = [
+                stop.location
+                for stop in plan.stops
+                if stop.stop_type.value in ("task", "deal")
+            ]
+            # Try different POI orderings via TSP heuristic
+            best_route = None
+            best_perm = list(range(len(poi_locations)))
+            best_dist = float("inf")
+            # Only permute if there are 2-3 POIs (2!=2, 3!=6 permutations)
+            max_perms = 6
+            if len(poi_locations) <= 3:
+                for perm in itertools.permutations(range(len(poi_locations))):
+                    ordered_locs = [poi_locations[i] for i in perm]
+                    # Quick Haversine estimate
+                    est = self._estimate_path_haversine(start, ordered_locs, end)
+                    if est < best_dist:
+                        best_dist = est
+                        best_perm = list(perm)
+            try:
+                ordered_locs = [poi_locations[i] for i in best_perm]
+                verify_points = [start] + ordered_locs + [end]
+                real_route = await asyncio.wait_for(
+                    self.backend_client.calculate_route(verify_points, travel_mode),
+                    timeout=min(remaining, timeout_seconds),
+                )
+                # Reorder stops to match the verified POI order
+                reordered_stops = self._reorder_plan_stops(plan, best_perm)
+                plan.route = real_route
+                plan.stops = reordered_stops
+                plan.detour_distance_meters = max(
+                    0, real_route.distance_meters - base_route.distance_meters
+                )
+                plan.extra_time_minutes = round(
+                    max(0.0, real_route.duration_minutes - base_route.duration_minutes), 1
+                )
+                verified.append(plan)
+            except Exception:
+                pass  # Keep Haversine plan if Amap fails
+        return verified
+
+    @staticmethod
+    def _estimate_path_haversine(
+        start: Location,
+        pois: list[Location],
+        end: Location,
+    ) -> float:
+        """Estimate total Haversine distance for start → pois → end."""
+        all_points = [start] + list(pois) + [end]
+        total = 0.0
+        for a, b in zip(all_points, all_points[1:]):
+            total += PlanAgent._haversine_meters(
+                a.longitude or 0, a.latitude or 0,
+                b.longitude or 0, b.latitude or 0,
+            )
+        return total
+
+    @staticmethod
+    def _reorder_plan_stops(plan, perm: list[int]) -> list:
+        """Reorder plan stops to match the TSP-optimized POI permutation."""
+        orig_stops = list(plan.stops)
+        # Find POI stop indices (stops between start and end)
+        poi_indices = [
+            i for i, s in enumerate(orig_stops)
+            if s.stop_type.value in ("task", "deal")
+        ]
+        # Build new stops: keep start, reorder POIs by perm, keep end
+        new_stops = [orig_stops[0]]  # Start stays
+        for pi in perm:
+            if pi < len(poi_indices):
+                orig_idx = poi_indices[pi]
+                stop = orig_stops[orig_idx]
+                new_stops.append(stop)
+        new_stops.append(orig_stops[-1])  # End stays
+        # Re-assign order numbers
+        for i, s in enumerate(new_stops, start=1):
+            s.order = i
+        return new_stops
 
     @staticmethod
     def _error_response(request: PlanRequest, error: AgentError) -> PlanResponse:
