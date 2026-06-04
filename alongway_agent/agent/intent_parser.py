@@ -282,6 +282,10 @@ class IntentParser:
                 ["快餐", "小吃", "餐厅"],
             ),
             (
+                ["小吃", "快餐", "简餐"],
+                ["小吃", "快餐", "餐厅"],
+            ),
+            (
                 ["早餐", "早饭", "早点"],
                 ["早餐", "早点", "小吃"],
             ),
@@ -290,7 +294,7 @@ class IntentParser:
                 ["简餐", "午餐", "食堂"],
             ),
             (
-                ["晚餐", "夜宵", "宵夜"],
+                ["晚餐", "晚饭", "夜宵", "宵夜"],
                 ["晚餐", "夜宵", "餐厅"],
             ),
             (
@@ -357,6 +361,9 @@ class IntentParser:
             elif any(word in user_query for word in ["日料", "日本料理", "寿司", "拉面"]):
                 keywords = ["日料", "日本料理", "寿司", "餐厅"]
                 raw_keywords = ["日料", "日本料理", "寿司", "拉面"]
+            elif any(word in user_query for word in ["小吃", "快餐", "简餐"]):
+                keywords = ["小吃", "快餐", "餐厅"]
+                raw_keywords = ["小吃", "快餐", "简餐"]
             elif any(word in user_query for word in ["早餐", "早饭", "早点"]):
                 keywords = ["早餐", "早点", "小吃"]
                 raw_keywords = ["早餐", "早饭", "早点"]

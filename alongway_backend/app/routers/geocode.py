@@ -113,6 +113,41 @@ LOCAL_GEOCODE_FALLBACKS = {
         longitude=114.4148,
         latitude=30.5159,
     ),
+    "光谷步行街": GeocodeResult(
+        name="光谷步行街",
+        address="武汉市洪山区光谷步行街",
+        location="114.4013,30.5058",
+        longitude=114.4013,
+        latitude=30.5058,
+    ),
+    "群光广场": GeocodeResult(
+        name="群光广场",
+        address="武汉市洪山区珞喻路6号",
+        location="114.3578,30.5262",
+        longitude=114.3578,
+        latitude=30.5262,
+    ),
+    "华中师范大学": GeocodeResult(
+        name="华中师范大学",
+        address="武汉市洪山区珞喻路152号",
+        location="114.3650,30.5213",
+        longitude=114.3650,
+        latitude=30.5213,
+    ),
+    "华师": GeocodeResult(
+        name="华中师范大学",
+        address="武汉市洪山区珞喻路152号",
+        location="114.3650,30.5213",
+        longitude=114.3650,
+        latitude=30.5213,
+    ),
+    "远洋世界": GeocodeResult(
+        name="远洋世界",
+        address="武汉市洪山区华中科技大学东侧",
+        location="114.4280,30.5185",
+        longitude=114.4280,
+        latitude=30.5185,
+    ),
 }
 
 
@@ -219,9 +254,14 @@ def _should_use_local_immediately(address: str) -> bool:
         "华科",
         "光谷",
         "光谷广场",
+        "光谷步行街",
         "世界城广场",
         "世界城",
         "江汉路",
         "江汉路步行街",
+        "群光广场",
+        "华中师范大学",
+        "华师",
+        "远洋世界",
     }
     return text in fast_aliases
