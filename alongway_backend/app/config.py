@@ -34,7 +34,7 @@ class Settings:
         self.amap_base_url = _normalize_amap_base_url(
             os.getenv("AMAP_BASE_URL", "https://restapi.amap.com")
         )
-        self.amap_timeout_seconds = int(os.getenv("AMAP_TIMEOUT_SECONDS", "20"))
+        self.amap_timeout_seconds = int(os.getenv("AMAP_TIMEOUT_SECONDS", "8"))
 
         # Debug mode — when True, log full request bodies (including coordinates+preferences)
         self.debug = os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")

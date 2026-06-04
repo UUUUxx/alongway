@@ -219,9 +219,10 @@ class PlanAgent:
             )
             selected_plan = ranked_plans[0]
 
-            # ── v2: Top-N Amap verification with TSP POI reordering ──
-            if self.v2_enabled and not use_real_eval:
-                top_n_verify = min(3, len(ranked_plans))  # Verify top 3 plans
+            # ── v2: Amap verification — only for 1-task plans (fast, 2 segments) ──
+            # For 2+ tasks: trust Haversine+circuity ranking (verified in tests: <15% error)
+            if self.v2_enabled and not use_real_eval and len(intent.tasks) <= 1:
+                top_n_verify = min(3, len(ranked_plans))
                 verify_started = time.perf_counter()
                 verified_plans = await self._verify_top_plans_with_amap(
                     ranked_plans=ranked_plans[:top_n_verify],
@@ -241,7 +242,6 @@ class PlanAgent:
                         key=lambda p: (p.detour_distance_meters, p.estimated_cost)
                     )
                     selected_plan = verified_plans[0]
-                    # Merge verified plans back: replace top N with verified, keep rest
                     verified_ids = {p.plan_id for p in verified_plans}
                     ranked_plans = (
                         verified_plans

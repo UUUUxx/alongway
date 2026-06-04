@@ -61,6 +61,14 @@ class RouteEvaluator:
         max_candidates = request.constraints.max_route_candidates
         candidate_combinations: list[tuple[EnrichedCandidate, ...]] = []
         all_combinations = list(product(*groups))
+        # Deduplicate: skip combinations where same POI serves multiple tasks
+        deduped_combinations: list[tuple[EnrichedCandidate, ...]] = []
+        for combination in all_combinations:
+            poi_ids = [c.poi.poi_id for c in combination]
+            if len(poi_ids) != len(set(poi_ids)):
+                continue  # Same POI reused for different tasks — skip
+            deduped_combinations.append(combination)
+        all_combinations = deduped_combinations if deduped_combinations else list(product(*groups))
         all_combinations.sort(
             key=lambda combination: self._rough_combination_key(combination, request.preferences)
         )

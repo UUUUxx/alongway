@@ -67,8 +67,8 @@ def load_settings() -> Settings:
         ).rstrip("/"),
         stepfun_model=os.getenv("STEPFUN_MODEL", "step-3.5-flash"),
         stepfun_timeout_seconds=float(os.getenv("STEPFUN_TIMEOUT_SECONDS", "20")),
-        poi_timeout_seconds=float(os.getenv("ALONGWAY_POI_TIMEOUT_SECONDS", "20")),
-        route_timeout_seconds=float(os.getenv("ALONGWAY_ROUTE_TIMEOUT_SECONDS", "120")),
+        poi_timeout_seconds=float(os.getenv("ALONGWAY_POI_TIMEOUT_SECONDS", "10")),
+        route_timeout_seconds=float(os.getenv("ALONGWAY_ROUTE_TIMEOUT_SECONDS", "40")),
         # v2 toggles
         route_optimization_v2=_env_bool("ROUTE_OPTIMIZATION_V2", True),
         haversine_topk=int(os.getenv("HAVERSINE_TOPK", "5")),
