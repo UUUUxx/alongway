@@ -247,6 +247,17 @@ class PlanAgent:
                         verified_plans
                         + [p for p in ranked_plans if p.plan_id not in verified_ids]
                     )
+            if self.v2_enabled and not use_real_eval:
+                verify_started = time.perf_counter()
+                selected_plan = await self._verify_selected_plan_route_with_amap(
+                    plan=selected_plan,
+                    base_route=base_route,
+                    travel_mode=request.travel_mode,
+                    timeout_seconds=self.route_timeout_seconds,
+                )
+                metrics.amap_route_total_ms += int(
+                    (time.perf_counter() - verify_started) * 1000
+                )
             alternative_plans = [
                 self._to_alternative_summary(plan) for plan in ranked_plans[1:4]
             ]
@@ -521,6 +532,40 @@ class PlanAgent:
             except Exception:
                 pass  # Keep Haversine plan if Amap fails
         return verified
+
+    async def _verify_selected_plan_route_with_amap(
+        self,
+        plan,
+        base_route: RouteResult,
+        travel_mode: str,
+        timeout_seconds: float,
+    ):
+        """Replace the selected plan's approximate route with a real Amap route."""
+        points = [
+            stop.location
+            for stop in plan.stops
+            if stop.location and stop.location.has_coordinates()
+        ]
+        if len(points) < 2:
+            return plan
+        try:
+            real_route = await asyncio.wait_for(
+                self.backend_client.calculate_route(points, travel_mode),
+                timeout=timeout_seconds,
+            )
+        except Exception:
+            return plan
+
+        plan.route = real_route
+        plan.detour_distance_meters = max(
+            0,
+            real_route.distance_meters - base_route.distance_meters,
+        )
+        plan.extra_time_minutes = round(
+            max(0.0, real_route.duration_minutes - base_route.duration_minutes),
+            1,
+        )
+        return plan
 
     @staticmethod
     def _estimate_path_haversine(

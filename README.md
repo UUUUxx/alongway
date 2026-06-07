@@ -39,6 +39,9 @@
 
 ```
 shunlu/
+├── start_alongway.ps1                 # Windows 一键启动/停止全部服务
+├── start_alongway.bat                 # CMD/双击入口，转调用 PowerShell 脚本
+│
 ├── alongway-frontend/alongway-demo/   # 前端 SPA
 │   └── index.html                     # React + Tailwind 单文件应用
 │
@@ -165,7 +168,7 @@ FastAPI 后端，负责数据管理、高德 API 集成和 Agent 代理：
 | `buy_drink`      | 奶茶/咖啡/饮品            | 奶茶,饮品,咖啡                    | ✅   |
 | `eat_meal`       | 吃饭/午饭/食堂            | 食堂,小吃,快餐,餐厅               | ✅   |
 | `visit_place`    | 公园/操场/图书馆          | 地点名                            | ❌   |
-| `custom`         | 看电影/桌游/KTV/密室/棋牌 | 电影院,桌游店,KTV,密室逃脱,棋牌室 | ❌   |
+| `custom`         | 看电影/桌游/KTV/密室/棋牌 | 电影院,桌游店,KTV,密室逃脱,棋牌室 | ✅   |
 
 **评分维度权重**（可根据偏好动态调整）：
 
@@ -271,13 +274,106 @@ FastAPI 后端，负责数据管理、高德 API 集成和 Agent 代理：
 
 ## 快速启动
 
-需要三个终端窗口：
+### 一键启动（推荐）
+
+前置条件：本机已安装 Anaconda / Miniconda，并且命令行里可以执行 `conda`。
+
+在 VSCode / CMD 终端里，推荐直接运行：
+
+```bat
+start_alongway.bat
+```
+
+第一次运行会创建 conda 环境并安装依赖，时间会稍长。
+
+如果已经安装过依赖，后续启动可以跳过依赖安装：
+
+```bat
+start_alongway.bat skipinstall
+```
+
+停止残留服务：
+
+```bat
+start_alongway.bat stop
+```
+
+如果想使用自定义环境名：
+
+```bat
+start_alongway.bat env alongway-dev
+```
+
+也可以用 PowerShell 方式运行：
+
+```powershell
+.\start_alongway.ps1
+```
+
+脚本会自动完成：
+
+- 检查是否存在 conda 环境 `alongway`；
+- 如果不存在，自动创建 `alongway` 环境（默认 Python 3.12）；
+- 安装 `alongway_backend/requirements.txt`；
+- 安装 `alongway_agent/requirements.txt`；
+- 初始化后端种子数据；
+- 启动 Backend：`http://127.0.0.1:8000`
+- 启动 Agent：`http://127.0.0.1:8001`
+- 启动 Frontend：`http://127.0.0.1:5173`
+
+PowerShell 下跳过依赖安装：
+
+```powershell
+.\start_alongway.ps1 -SkipInstall
+```
+
+PowerShell 下使用自定义环境名：
+
+```powershell
+.\start_alongway.ps1 -EnvName alongway-dev
+```
+
+访问前端：
+
+```text
+http://127.0.0.1:5173
+```
+
+终止应用：
+
+- 保持启动脚本窗口打开；
+- 按 `Ctrl+C` 会同时停止 Backend、Agent 和 Frontend。
+
+如果之前的服务残留在后台，或者窗口已经关掉但端口还被占用，可以运行：
+
+```bat
+start_alongway.bat stop
+```
+
+或：
+
+```powershell
+.\start_alongway.ps1 -Stop
+```
+
+注意：`-Stop` 会停止监听 `8000`、`8001`、`5173` 端口的进程，请确认这些端口没有被其他应用占用。
+
+### 手动启动（备用）
+
+如果一键脚本不可用，也可以手动开三个终端窗口：
+
+```bash
+conda create -n alongway python=3.12
+conda activate alongway
+pip install -r alongway_backend/requirements.txt
+pip install -r alongway_agent/requirements.txt
+```
 
 ### 1. 启动 Backend (端口 8000)
 
 ```bash
+conda activate alongway
 cd alongway_backend
-pip install -r requirements.txt
 python -m app.seed              # 首次运行：初始化数据库
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
@@ -290,8 +386,8 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ### 2. 启动 Agent (端口 8001)
 
 ```bash
+conda activate alongway
 cd alongway_agent
-pip install -r requirements.txt
 uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload
 ```
 
@@ -302,6 +398,7 @@ uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload
 ### 3. 启动 Frontend (端口 5173)
 
 ```bash
+conda activate alongway
 cd alongway-frontend/alongway-demo
 python -m http.server 5173
 ```
@@ -315,7 +412,7 @@ python -m http.server 5173
 在 `alongway_backend/.env` 中配置：
 
 ```env
-# 高德 Web Service API Key（可选，不填则使用 Haversine 近似路线）
+# 高德 Web Service API Key（可选，已默认填写）
 AMAP_KEY=your_amap_api_key
 
 # 数据库（默认 SQLite）
@@ -332,8 +429,8 @@ DEBUG=true
 在 `alongway_agent/.env` 中配置：
 
 ```env
-# 使用 Mock 后端（不依赖真实 Backend）
-ALONGWAY_USE_MOCK_BACKEND=false
+# 使用 Mock 后端（依赖真实 Backend）
+ALONGWAY_USE_MOCK_BACKEND=true
 
 # Backend 服务地址
 ALONGWAY_BACKEND_URL=http://localhost:8000
@@ -380,7 +477,7 @@ pytest tests/ -v
 ```
 
 ```text
-从华中科技大学明德楼，到远洋世界，剪个头发，吃烧烤，再喝杯奶茶
+从华中科技大学明德楼，到远洋世界三期，剪个头发，吃烧烤，再喝杯奶茶
 ```
 
 ```text
@@ -408,8 +505,6 @@ pytest tests/ -v
 
 - 路线计算优先使用 Haversine 近似，配置 AMAP_KEY 后可启用真路网
 - 团购数据是 Mock 模板生成，非真实美团 API
-- 前端地图是 SVG 示意图，非高德地图 SDK
-- Agent 的 LLM 模块默认使用 Mock（模板/规则），可接入真实 LLM
 - 意图解析仅稳定支持快递/饮品/吃饭/到访四类任务
 - 数据库使用 SQLite，生产部署应切换 Postgres
 

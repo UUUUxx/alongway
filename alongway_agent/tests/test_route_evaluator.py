@@ -184,3 +184,79 @@ def test_route_evaluator_filters_pois_after_destination() -> None:
     )
 
     assert result.plans == []
+
+
+def test_route_evaluator_reorders_multiple_task_stops_to_reduce_detour() -> None:
+    start = Location(name="Start", longitude=0.0, latitude=0.0)
+    end = Location(name="End", longitude=0.03, latitude=0.0)
+    far_first = POI(
+        poi_id="poi_far_first",
+        name="Far First",
+        type="food",
+        longitude=0.025,
+        latitude=0.0,
+        source_keyword="food",
+    )
+    near_second = POI(
+        poi_id="poi_near_second",
+        name="Near Second",
+        type="drink",
+        longitude=0.005,
+        latitude=0.0,
+        source_keyword="drink",
+    )
+    tasks = [
+        TaskSpec(
+            task_id="task_1",
+            type=TaskType.EAT_MEAL,
+            raw_text="eat",
+            source_keywords=["food"],
+            category="food",
+        ),
+        TaskSpec(
+            task_id="task_2",
+            type=TaskType.BUY_DRINK,
+            raw_text="drink",
+            source_keywords=["drink"],
+            category="drink",
+        ),
+    ]
+    request = PlanRequest(
+        request_id="req_reorder",
+        user_query="eat then drink",
+        constraints=PlanConstraints(max_detour_meters=10_000, max_extra_time_minutes=120),
+    )
+    evaluator = RouteEvaluator(FailingRouteBackend())
+
+    result = asyncio.run(
+        evaluator.evaluate(
+            request=request,
+            start=start,
+            end=end,
+            tasks=tasks,
+            candidates_by_task={
+                "task_1": [
+                    EnrichedCandidate(
+                        task_id="task_1",
+                        task_type=TaskType.EAT_MEAL,
+                        poi=far_first,
+                    )
+                ],
+                "task_2": [
+                    EnrichedCandidate(
+                        task_id="task_2",
+                        task_type=TaskType.BUY_DRINK,
+                        poi=near_second,
+                    )
+                ],
+            },
+            base_route=RouteResult(distance_meters=3300, duration_minutes=44, polyline=[]),
+            timeout_seconds=0.1,
+            use_real_route=False,
+        )
+    )
+
+    assert result.plans
+    stop_names = [stop.name for stop in result.plans[0].stops]
+    assert stop_names == ["Start", "Near Second", "Far First", "End"]
+    assert result.plans[0].route.distance_meters < 5000

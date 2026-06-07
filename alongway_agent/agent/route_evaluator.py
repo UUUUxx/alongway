@@ -4,7 +4,7 @@ import asyncio
 import math
 import time
 from dataclasses import dataclass
-from itertools import product
+from itertools import permutations, product
 from typing import List
 
 from agent.backend_client import BackendClient
@@ -70,7 +70,12 @@ class RouteEvaluator:
             deduped_combinations.append(combination)
         all_combinations = deduped_combinations if deduped_combinations else list(product(*groups))
         all_combinations.sort(
-            key=lambda combination: self._rough_combination_key(combination, request.preferences)
+            key=lambda combination: self._rough_combination_key(
+                combination,
+                request.preferences,
+                start=start,
+                end=end,
+            )
         )
         candidate_combinations = all_combinations[:max_candidates]
 
@@ -82,7 +87,8 @@ class RouteEvaluator:
             remaining = deadline - time.perf_counter()
             if remaining <= 0:
                 break
-            points = [start] + [candidate.poi.to_location() for candidate in combination] + [end]
+            ordered_combination = self._optimize_visit_order(start, end, combination)
+            points = [start] + [candidate.poi.to_location() for candidate in ordered_combination] + [end]
             if use_real_route:
                 try:
                     route = await asyncio.wait_for(
@@ -103,7 +109,7 @@ class RouteEvaluator:
 
             plan = CandidatePlan(
                 plan_id=f"plan_{index:03d}",
-                stops=self._build_stops(start, end, combination),
+                stops=self._build_stops(start, end, ordered_combination),
                 route=route,
                 base_distance_meters=base_route.distance_meters,
                 base_duration_minutes=base_route.duration_minutes,
@@ -147,7 +153,13 @@ class RouteEvaluator:
         return (rating_key, price_key, sales_key)
 
     @classmethod
-    def _rough_combination_key(cls, combination: tuple[EnrichedCandidate, ...], preferences) -> tuple[float, float, float]:
+    def _rough_combination_key(
+        cls,
+        combination: tuple[EnrichedCandidate, ...],
+        preferences,
+        start: Location | None = None,
+        end: Location | None = None,
+    ) -> tuple[float, float, float, float]:
         prices = [
             candidate.deal.price if candidate.deal else candidate.poi.cost
             for candidate in combination
@@ -166,13 +178,91 @@ class RouteEvaluator:
         total_price = sum(prices) if prices else 9999
         avg_rating = sum(ratings) / len(ratings) if ratings else 0
         max_sales = max(sales, default=0)
+        route_distance = (
+            cls._shortest_order_distance(start, end, combination)
+            if start is not None and end is not None and preferences.prefer_less_detour
+            else 0.0
+        )
         if preferences.prefer_low_price:
-            return (total_price, -avg_rating, -max_sales)
+            return (total_price, route_distance, -avg_rating, -max_sales)
         if preferences.prefer_high_rating:
-            return (-avg_rating, total_price, -max_sales)
+            return (-avg_rating, route_distance, total_price, -max_sales)
         if preferences.prefer_high_sales:
-            return (-max_sales, -avg_rating, total_price)
-        return (-avg_rating, total_price, -max_sales)
+            return (-max_sales, route_distance, -avg_rating, total_price)
+        return (route_distance, -avg_rating, total_price, -max_sales)
+
+    @classmethod
+    def _optimize_visit_order(
+        cls,
+        start: Location,
+        end: Location,
+        candidates: tuple[EnrichedCandidate, ...],
+    ) -> tuple[EnrichedCandidate, ...]:
+        if len(candidates) <= 1:
+            return candidates
+        best_order = candidates
+        best_distance = cls._path_distance([start] + [c.poi.to_location() for c in candidates] + [end])
+
+        if len(candidates) <= 6:
+            candidate_orders = permutations(candidates)
+        else:
+            candidate_orders = [cls._nearest_neighbor_order(start, end, candidates)]
+
+        for order in candidate_orders:
+            distance = cls._path_distance([start] + [c.poi.to_location() for c in order] + [end])
+            if distance < best_distance:
+                best_distance = distance
+                best_order = order
+        return tuple(best_order)
+
+    @classmethod
+    def _shortest_order_distance(
+        cls,
+        start: Location,
+        end: Location,
+        candidates: tuple[EnrichedCandidate, ...],
+    ) -> float:
+        ordered = cls._optimize_visit_order(start, end, candidates)
+        return cls._path_distance([start] + [c.poi.to_location() for c in ordered] + [end])
+
+    @classmethod
+    def _nearest_neighbor_order(
+        cls,
+        start: Location,
+        end: Location,
+        candidates: tuple[EnrichedCandidate, ...],
+    ) -> tuple[EnrichedCandidate, ...]:
+        remaining = list(candidates)
+        current = start
+        ordered: list[EnrichedCandidate] = []
+        while remaining:
+            next_index = min(
+                range(len(remaining)),
+                key=lambda index: (
+                    cls._location_distance(current, remaining[index].poi.to_location())
+                    + cls._location_distance(remaining[index].poi.to_location(), end) * 0.15
+                ),
+            )
+            next_candidate = remaining.pop(next_index)
+            ordered.append(next_candidate)
+            current = next_candidate.poi.to_location()
+        return tuple(ordered)
+
+    @classmethod
+    def _path_distance(cls, points: list[Location]) -> float:
+        return sum(
+            cls._location_distance(start, end)
+            for start, end in zip(points, points[1:])
+        )
+
+    @classmethod
+    def _location_distance(cls, start: Location, end: Location) -> float:
+        return cls._haversine_meters(
+            start.longitude or 0,
+            start.latitude or 0,
+            end.longitude or 0,
+            end.latitude or 0,
+        )
 
     @staticmethod
     def _build_stops(

@@ -11,7 +11,7 @@ if str(ROOT) not in sys.path:
 
 from agent.backend_client import MockBackendClient
 from agent.llm_client import LLMClient, MockLLMClient
-from agent.models import Location, PlanRequest, StopType, UserPreferences
+from agent.models import Location, PlanRequest, RouteResult, StopType, UserPreferences
 from agent.planner_agent import PlanAgent
 
 
@@ -21,6 +21,27 @@ class FailingLLMClient(LLMClient):
 
     async def generate_explanation(self, user_query, selected_plan, alternative_plans):
         return None
+
+
+class PolylineBackendClient(MockBackendClient):
+    async def calculate_route(self, points, travel_mode):
+        route = await super().calculate_route(points, travel_mode)
+        detailed_polyline = []
+        for start, end in zip(points, points[1:]):
+            if not start.has_coordinates() or not end.has_coordinates():
+                continue
+            detailed_polyline.append([start.longitude, start.latitude])
+            detailed_polyline.append([
+                ((start.longitude or 0) + (end.longitude or 0)) / 2,
+                ((start.latitude or 0) + (end.latitude or 0)) / 2 + 0.0001,
+            ])
+        detailed_polyline.append([points[-1].longitude, points[-1].latitude])
+        return RouteResult(
+            distance_meters=route.distance_meters,
+            duration_minutes=route.duration_minutes,
+            polyline=detailed_polyline,
+            segments=route.segments,
+        )
 
 
 def test_planner_agent_returns_valid_plan_with_mock_backend() -> None:
@@ -101,3 +122,35 @@ def test_search_center_prefers_destination_for_low_detour() -> None:
 
     assert center.longitude == end.longitude
     assert center.latitude == end.latitude
+
+
+def test_planner_agent_verifies_selected_plan_with_real_polyline() -> None:
+    request = PlanRequest(
+        request_id="req_real_polyline",
+        user_query="我从宿舍去图书馆，路上想取快递，再买一杯奶茶",
+        start_location=Location(
+            name="学生宿舍",
+            longitude=114.123,
+            latitude=30.456,
+        ),
+        end_location=Location(
+            name="图书馆",
+            longitude=114.128,
+            latitude=30.462,
+        ),
+        city="武汉",
+        travel_mode="walking",
+        preferences=UserPreferences(prefer_less_detour=True),
+    )
+    agent = PlanAgent(
+        backend_client=PolylineBackendClient(),
+        llm_client=MockLLMClient(),
+        route_timeout_seconds=1,
+    )
+
+    response = asyncio.run(agent.plan(request))
+
+    assert response.success is True
+    assert response.selected_plan is not None
+    stop_count = len(response.selected_plan.stops)
+    assert len(response.selected_plan.route.polyline) > stop_count
